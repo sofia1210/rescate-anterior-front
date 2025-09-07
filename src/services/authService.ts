@@ -9,13 +9,13 @@ interface RegisterData {
 }
 
 interface LoginData {
-  username: string;
+  email: string;
   password: string;
 }
 
 // 🟢 Registro de usuario
 export const registerUser = (data: RegisterData) => {
-  return api.post("/users/register", data);
+  return api.post("/users", data);
 };
 
 // 🟢 Login de usuario

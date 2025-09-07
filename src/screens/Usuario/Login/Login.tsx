@@ -13,15 +13,15 @@ export const Login = (): JSX.Element => {
     e.preventDefault();
     const form = e.currentTarget;
 
-    const usernameInput = form.username as HTMLInputElement;
+    const emailInput = form.username as HTMLInputElement;
     const passwordInput = form.password as HTMLInputElement;
 
-    if (!usernameInput.value.trim()) {
-      usernameInput.setCustomValidity("El nombre de usuario es obligatorio.");
-      usernameInput.reportValidity();
+    if (!emailInput.value.trim()) {
+      emailInput.setCustomValidity("El nombre de usuario es obligatorio.");
+      emailInput.reportValidity();
       return;
     } else {
-      usernameInput.setCustomValidity("");
+      emailInput.setCustomValidity("");
     }
 
     if (!passwordInput.value.trim()) {
@@ -34,8 +34,8 @@ export const Login = (): JSX.Element => {
 
     try {
       const res = await loginUser({
-        username: usernameInput.value,
-        password: passwordInput.value
+        email: emailInput.value,
+        password: passwordInput.value,
       });
 
       // Guardar token en localStorage
@@ -52,17 +52,16 @@ export const Login = (): JSX.Element => {
       <div className="flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-green-500/80">
         <div className="max-w-md mx-auto w-full">
           <div className="flex justify-center mb-8">
-            <img
-              src="/imagenes/Patota.png"
-              alt="Logo"
-              className="w-24 h-24"
-            />
+            <img src="/imagenes/Patota.png" alt="Logo" className="w-24 h-24" />
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4" noValidate>
             <div>
-              <label htmlFor="username" className="block text-sm text-white mb-1">
-                Nombre de usuario:
+              <label
+                htmlFor="username"
+                className="block text-sm text-white mb-1"
+              >
+                Email:
               </label>
               <Input
                 id="username"
@@ -73,7 +72,10 @@ export const Login = (): JSX.Element => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm text-white mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm text-white mb-1"
+              >
                 Contraseña:
               </label>
               <div className="relative">
@@ -94,7 +96,10 @@ export const Login = (): JSX.Element => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full bg-white text-green-700 hover:bg-white/90 mt-6">
+            <Button
+              type="submit"
+              className="w-full bg-white text-green-700 hover:bg-white/90 mt-6"
+            >
               INICIAR SESIÓN
             </Button>
 
