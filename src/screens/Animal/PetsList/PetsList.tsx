@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect,useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -6,6 +6,7 @@ import { AnimalDetails } from "../AnimalDetails/AnimalDetails";
 import { AddAnimal } from "../AddAnimal/AddAnimal";
 import { RescuerDetails } from "../../Rescatista/RescuerDetails/RescuerDetails";
 import { EditRescuer } from "../../Rescatista/EditRescuer/EditRescuer";
+import { usePets } from "../../../services/usePets";
 
 export const PetsList = (): JSX.Element => {
   const navigate = useNavigate();
@@ -29,50 +30,23 @@ export const PetsList = (): JSX.Element => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const pets = [
-    { 
-      id: 1, 
-      name: 'Animal 1', 
-      species: 'Especie', 
-      breed: 'Raza', 
-      image: '/dog.svg',
-      sex: 'Macho',
-      age: '2 años',
-      healthStatus: 'Saludable',
-      admissionDate: '2024-01-15',
-      feedingType: 'Pienso seco',
-      recommendedAmount: '200g',
-      recommendedFrequency: '2 veces al día',
-      releaseDate: 'Pendiente',
-      releaseLocation: 'Por determinar',
-      tipo: 'domestico',
-      rescuer: {
-        id: 1,
-        name: 'Juan Pérez',
-        phone: '123-456-789',
-        rescueDate: '2024-01-10',
-        rescueLocation: 'Parque Central'
-      }
-    },
-    { 
-      id: 2, 
-      name: 'Animal 2', 
-      species: 'Especie', 
-      breed: 'Raza', 
-      image: '/cat.svg',
-      sex: 'Hembra',
-      healthStatus: 'En tratamiento',
-      admissionDate: '2024-01-16',
-      tipo: 'silvestre',
-      rescuer: {
-        id: 2,
-        name: 'María López',
-        phone: '987-654-321',
-        rescueDate: '2024-01-12',
-        rescueLocation: 'Bosque Norte'
-      }
-    },
-  ];
+  // antes: const pets = [ ...hardcoded... ];
+  const { pets } = usePets(
+    import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/animales` : "/animales"
+  );
+  const [query, setQuery] = useState("");
+  const normalize = (s: string) =>
+    (s || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+  // ⬇️ Filtrado por nombre (pet.name)
+  const filteredPets = useMemo(() => {
+    if (!query.trim()) return pets;
+    const q = normalize(query.trim());
+    return pets.filter((p: any) => normalize(p?.name).includes(q));
+  }, [pets, query]);
 
   const handleAddRescuerSuccess = (rescuerData: { id: number; fechaRescate: string }) => {
     setCurrentRescuerId(rescuerData.id);
@@ -146,8 +120,15 @@ export const PetsList = (): JSX.Element => {
         <div className="relative">
           <Input
             type="search"
-            placeholder="Search"
+            placeholder="Búsqueda por nombre del animal..."
             className="w-full pl-10 pr-4 py-2 rounded-lg bg-white"
+            // ⬇️ Controlado
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setQuery("");
+            }}
+            aria-label="Buscar por nombre"
           />
           <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <img src="imagenes/lupa.png" alt="Clear search" className="w-6 h-6" />
@@ -158,11 +139,11 @@ export const PetsList = (): JSX.Element => {
       {/* Pets Grid */}
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {pets.map((pet) => (
+          {filteredPets.map((pet) => (
             <div key={pet.id} className="bg-white rounded-lg p-4 shadow-md">
               <div className="flex justify-center mb-4">
                 {pet.image ? (
-                  <img src={"imagenes/tigre.jpg"} alt={pet.name} className="w-32 h-32 object-contain" />
+                  <img src={"imagenes/patita.png"} alt={pet.name} className="w-32 h-32 object-contain" />
                 ) : (
                   <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
                     <span className="text-gray-400">No image</span>
