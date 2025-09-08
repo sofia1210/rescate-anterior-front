@@ -1,13 +1,41 @@
 import React, { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { useNavigate } from "react-router-dom";
-import { createAnimal } from "../../../services/dataService";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+ 
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 
 interface AddAnimalProps {
   onClose: () => void;
   rescuerId?: string | null;
+  onSuccess?: () => void;
+  isEditing?: boolean;
+  initialAnimal?: {
+    id?: string | number;
+    name?: string;
+    species?: string;
+    breed?: string;
+    sex?: string;
+    healthStatus?: string;
+    feedingType?: string;
+    recommendedAmount?: string;
+    recommendedFrequency?: string;
+    admissionDate?: string;
+    tipo?: string;
+    rescuer?: { id?: string };
+  } | null;
+  selectedRescuer?: {
+    id?: string;
+    _id?: string;
+    nombre?: string;
+    telefono?: string;
+    fechaRescatista?: string;
+  } | null;
+}
+
+declare global {
+  interface Window {
+    google: any;
+  }
 }
 
 type TipoAnimal = "silvestre" | "doméstico" | "";
@@ -26,7 +54,6 @@ interface FormData {
   ubicacionRescate: string;
   latitud: string;
   longitud: string;
-  imagen: File | null;
 }
 
 const mapContainerStyle = {
@@ -42,25 +69,34 @@ const center = {
 export const AddAnimal = ({
   onClose,
   rescuerId,
+  onSuccess,
+  isEditing = false,
+  initialAnimal = null,
+  selectedRescuer = null,
 }: AddAnimalProps): JSX.Element => {
-  const navigate = useNavigate();
+ 
   const today = new Date().toISOString().split("T")[0];
 
+  const { isLoaded } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || "AIzaSyCl9B-64vdVOiZTBQOIVUEX7RVFW4Wr_BE",
+    libraries: ["places"],
+  });
+
   const [formData, setFormData] = useState<FormData>({
-    nombre: "",
-    tipo: "",
-    especie: "",
-    raza: "",
-    sexo: "",
-    estadoSalud: "",
-    tipoAlimentacion: "",
-    cantidadRecomendada: "",
-    frecuenciaRecomendada: "",
-    fechaRescate: "",
+    nombre: initialAnimal?.name || "",
+    tipo: initialAnimal?.tipo === "domestico" ? "doméstico" : initialAnimal?.tipo === "silvestre" ? "silvestre" : "",
+    especie: initialAnimal?.species || "",
+    raza: initialAnimal?.breed || "",
+    sexo: initialAnimal?.sex || "",
+    estadoSalud: initialAnimal?.healthStatus || "",
+    tipoAlimentacion: initialAnimal?.feedingType || "",
+    cantidadRecomendada: initialAnimal?.recommendedAmount || "",
+    frecuenciaRecomendada: initialAnimal?.recommendedFrequency || "",
+    fechaRescate: (initialAnimal?.admissionDate || "").split("T")[0] || "",
     ubicacionRescate: "",
     latitud: "",
     longitud: "",
-    imagen: null,
   });
 
   const [markerPosition, setMarkerPosition] = useState<{
@@ -97,34 +133,78 @@ export const AddAnimal = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ...existing code...
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-      const dataToSend = new FormData();
+  // Validación mínima de coordenadas (mapa)
+  if (!formData.latitud || !formData.longitud) {
+    alert("Por favor seleccioná una ubicación en el mapa (latitud/longitud).");
+    return;
+  }
 
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value && key !== "imagen") {
-          dataToSend.append(key, value);
-        }
-      });
-
-      if (formData.imagen) {
-        dataToSend.append("imagen", formData.imagen);
-      }
-
-      if (rescuerId) {
-        dataToSend.append("rescatistaId", rescuerId);
-      }
-
-      const response = await createAnimal(dataToSend);
-      console.log("✅ Animal registrado:", response.data);
-      onClose();
-    } catch (error) {
-      console.error("❌ Error al registrar el animal:", error);
-      alert("Hubo un problema al registrar el animal. Revisá la consola.");
-    }
+  // Mapea los datos del formulario al formato requerido
+  const animalData: Record<string, any> = {
+    nombre: formData.nombre,
+    especie: formData.especie,
+    raza: formData.raza,
+    sexo: formData.sexo,
+    edad: 3, // Puedes agregar un campo de edad en el formulario si lo necesitas
+    estadoSalud: formData.estadoSalud,
+    tipoAlimentacion: formData.tipoAlimentacion,
+    cantidadRecomendada: formData.cantidadRecomendada,
+    frecuenciaRecomendada: formData.frecuenciaRecomendada,
+    // Backend espera valores capitalizados según ejemplo ("Doméstico"|"Silvestre")
+    tipo: formData.tipo === "doméstico" ? "Doméstico" : "Silvestre",
+    // Vincular con el rescatista seleccionado
+    rescatista_id: rescuerId ?? undefined,
+    fechaRescate: formData.fechaRescate + "T10:00:00Z", // Ajusta si tienes hora
+    detallesRescate: "Encontrado en parque", // Puedes obtenerlo del formulario
+    latitud: parseFloat(formData.latitud),
+    longitud: parseFloat(formData.longitud),
+    descripcion: formData.ubicacionRescate,
+    ubicacionRescate: formData.ubicacionRescate,
   };
+  // Nota: evitamos enviar objeto rescatista anidado; el backend puede resolverlo por rescatista_id
+  // Compatibilidad: algunos endpoints esperan los campos del rescatista por nombre/teléfono/fecha
+  if (selectedRescuer) {
+    if (selectedRescuer.nombre) animalData.nombreRescatista = selectedRescuer.nombre;
+    if (selectedRescuer.telefono) animalData.telefonoRescatista = selectedRescuer.telefono;
+    if (selectedRescuer.fechaRescatista) animalData.fechaRescatista = selectedRescuer.fechaRescatista;
+  }
+
+  try {
+    const base = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/animales` : "/animales";
+    const url = isEditing && initialAnimal?.id ? `${base}/${initialAnimal.id}` : base;
+    const method = isEditing && initialAnimal?.id ? "PUT" : "POST";
+
+    const fd = new FormData();
+    Object.entries(animalData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        fd.append(key, typeof value === "number" ? String(value) : (value as string));
+      }
+    });
+    // No enviar imagen desde el front
+
+    const response = await fetch(url, {
+      method,
+      body: fd,
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Backend respondió:", response.status, errorText);
+      throw new Error(`Error en el registro (HTTP ${response.status})`);
+    }
+    const data = await response.json();
+    console.log("✅ Animal registrado:", data);
+    onClose();
+    onSuccess?.();
+  } catch (error) {
+    console.error("❌ Error al registrar el animal:", error);
+    alert("Hubo un problema al registrar el animal. Revisá la consola.");
+  }
+};
+// ...existing code...
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -242,7 +322,7 @@ export const AddAnimal = ({
               <span>Latitud: {formData.latitud}</span>
               <span>Longitud: {formData.longitud}</span>
             </div>
-            <LoadScript googleMapsApiKey="AIzaSyCl9B-64vdVOiZTBQOIVUEX7RVFW4Wr_BE">
+            {isLoaded && (
               <GoogleMap
                 mapContainerStyle={mapContainerStyle}
                 center={markerPosition || center}
@@ -251,54 +331,15 @@ export const AddAnimal = ({
               >
                 {markerPosition && <Marker position={markerPosition} />}
               </GoogleMap>
-            </LoadScript>
+            )}
           </div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Foto:</label>
-              <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                {formData.imagen ? (
-                  <img
-                    src={URL.createObjectURL(formData.imagen)}
-                    alt="Preview"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-24 w-24 text-gray-300"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                )}
-              </div>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    imagen: e.target.files?.[0] || null,
-                  })
-                }
-                className="w-full"
-              />
-            </div>
-          </div>
+          <div className="space-y-4" />
           <div className="md:col-span-2 mt-8 flex justify-center">
             <Button
               type="submit"
               className="bg-green-500 text-white hover:bg-green-600 px-8"
             >
-              AGREGAR ANIMAL
+              {isEditing ? "GUARDAR CAMBIOS" : "AGREGAR ANIMAL"}
             </Button>
           </div>
         </form>

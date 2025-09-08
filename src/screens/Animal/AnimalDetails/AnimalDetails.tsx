@@ -1,4 +1,3 @@
-import React from "react";
 import { Button } from "../../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -114,7 +113,6 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
           </div>
 
           <div className="flex flex-col items-center">
-            <p className="font-semibold mb-2">Foto:</p>
             {animal.image ? (
               <img src={"imagenes/patita.png"} alt={animal.name} className="w-full h-64 object-cover rounded-lg" />
             ) : (

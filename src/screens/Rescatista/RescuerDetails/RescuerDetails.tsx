@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { getAllRescatistas } from "../../../services/dataService"; // ✅ cambio aquí
 import { Button } from "../../../components/ui/button";
 import { EditRescuer } from "../EditRescuer/EditRescuer";
 
@@ -21,21 +20,54 @@ export const RescuerDetails = (): JSX.Element => {
   const [rescuerData, setRescuerData] = useState<Rescatista | null>(null);
 
   useEffect(() => {
-    getAllRescatistas()
-      .then((res: { data: Rescatista[] }) => {
-        const found = res.data.find((r) => r._id === id);
-        setRescuerData(found || null);
-      })
-      .catch((err: unknown) => console.error("Error al obtener rescatista:", err));
+    const fetchRescuer = async () => {
+      try {
+        // 1. Obtener el animal por su id
+        const animalRes = await fetch(
+          import.meta.env.VITE_API_URL
+            ? `${import.meta.env.VITE_API_URL}/animales/${id}`
+            : `/animales/${id}`
+        );
+        const animal = await animalRes.json();
+
+        // 2. Tomar el primer rescatista del array (o el objeto)
+        let resc = null;
+        if (Array.isArray(animal.rescatista) && animal.rescatista.length > 0) {
+          resc = animal.rescatista[0];
+        } else if (animal.rescatista && typeof animal.rescatista === "object") {
+          resc = animal.rescatista;
+        }
+
+        if (!resc) {
+          setRescuerData(null);
+          return;
+        }
+
+        // 3. Adaptar los campos al formato esperado por el componente
+        setRescuerData({
+          _id: resc._id,
+          nombreRescatista: resc.nombre,
+          telefonoContacto: resc.telefono,
+          fechaRescate: resc.fechaRescatista,
+          ubicacionRescate: resc.geolocalizacionId || "", // o el campo correcto
+          detallesRescate: resc.descripcion || "",
+          foto: resc.imagen || "",
+        });
+      } catch (err) {
+        console.error("Error al obtener rescatista:", err);
+        setRescuerData(null);
+      }
+    };
+    if (id) fetchRescuer();
   }, [id]);
 
-  if (showEditRescuer && id) {
+  if (showEditRescuer && id && rescuerData?._id) {
     return (
       <EditRescuer
         animalId={Number(id)}
         onClose={() => setShowEditRescuer(false)}
         isEditing={true}
-        rescatistaId={id}
+        rescatistaId={rescuerData._id}
       />
     );
   }
