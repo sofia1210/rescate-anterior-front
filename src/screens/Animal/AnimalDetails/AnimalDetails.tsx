@@ -114,7 +114,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
 
           <div className="flex flex-col items-center">
             {animal.image ? (
-              <img src={"imagenes/patita.png"} alt={animal.name} className="w-full h-64 object-cover rounded-lg" />
+              <img src={animal.image} alt={animal.name} className="w-full h-64 object-cover rounded-lg" />
             ) : (
               <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -168,7 +168,7 @@ export const PetsList = (): JSX.Element => {
             <div key={pet.id} className="bg-white rounded-lg p-4 shadow-md">
               <div className="flex justify-center mb-4">
                 {pet.image ? (
-                  <img src={"imagenes/patita.png"} alt={pet.name} className="w-32 h-32 object-contain" />
+                  <img src={pet.image} alt={pet.name} className="w-32 h-32 object-contain" />
                 ) : (
                   <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
                     <span className="text-gray-400">No image</span>
