@@ -1,44 +1,49 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
+import { Navbar } from "../../components/Navbar";
 
 export const Reports = (): JSX.Element => {
   const navigate = useNavigate();
+  const [isSaving, setIsSaving] = useState(false);
+  const [reportSaved, setReportSaved] = useState(false);
+  const [savedReportData, setSavedReportData] = useState<any>(null);
+
+  // Datos hardcodeados del reporte
+  const reportData = {
+    fechaGeneracion: new Date().toLocaleDateString('es-ES'),
+    periodo: "Enero - Noviembre 2024",
+    totalAnimalesRegistrados: 156,
+    animalesEnTratamiento: 23,
+    animalesRescatados: 134,
+    animalesLiberados: 45,
+    porcentajeRegistrados: 86,
+    porcentajeTratamiento: 34,
+    porcentajeRescatados: 86,
+    porcentajeLiberados: 34
+  };
+
+  const handleSaveReport = async () => {
+    setIsSaving(true);
+    
+    // Simular guardado con delay
+    setTimeout(() => {
+      setSavedReportData(reportData);
+      setReportSaved(true);
+      setIsSaving(false);
+    }, 2000);
+  };
 
   return (
     <div className="min-h-screen bg-green-400/80">
-      {/* Header */}
-      <header className="bg-green-500/80 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img src="/imagenes/Patota.png" alt="Logo" className="w-10 h-10" />
-            <h1 className="text-white text-xl">Reportes Automáticos</h1>
-          </div>
-          <nav className="flex gap-6">
-            <Link to="/reports" className="text-white flex items-center gap-2">
-              <img src="/imagenes/reportesillo.png" alt="Reportes" className="w-10 h-10" />
-              Reportes
-            </Link>
-            <Link to="/management" className="text-white flex items-center gap-2">
-              <img src="/imagenes/Gestion.png" alt="Gestiones" className="w-12 h-12" />
-              Gestiones
-            </Link>
-            <Link to="/pets" className="text-white flex items-center gap-2">
-              <img src="/imagenes/home.png" alt="Home" className="w-8 h-8" />
-              Home
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar 
+        title="Reportes Automáticos" 
+       
+      />
 
       <div className="container mx-auto p-4">
-        <div className="flex items-center gap-4 mb-6">
-          <button onClick={() => navigate(-1)} className="text-white hover:text-gray-200">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
-          <h2 className="text-white text-xl">Reportes Automáticos</h2>
+        <div className="mb-6">
+          <h2 className="text-white text-xl font-semibold">Reportes Automáticos</h2>
         </div>
 
         <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -102,10 +107,85 @@ export const Reports = (): JSX.Element => {
           </div>
 
           <div className="mt-8 flex justify-center">
-            <Button className="bg-green-500 text-white hover:bg-green-600 px-8">
-              GUARDAR REPORTES
+            <Button 
+              onClick={handleSaveReport}
+              disabled={isSaving}
+              className="bg-green-500 text-white hover:bg-green-600 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? (
+                <div className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  GUARDANDO...
+                </div>
+              ) : (
+                "GUARDAR REPORTES"
+              )}
             </Button>
           </div>
+
+          {/* Mensaje de confirmación */}
+          {reportSaved && (
+            <div className="mt-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">¡Reporte guardado exitosamente!</span>
+              </div>
+              <p className="mt-1 text-sm">El reporte se ha guardado con fecha: {savedReportData?.fechaGeneracion}</p>
+            </div>
+          )}
+
+          {/* Mostrar datos guardados */}
+          {savedReportData && (
+            <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Datos del Reporte Guardado</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">Fecha de Generación</p>
+                  <p className="font-semibold text-blue-800">{savedReportData.fechaGeneracion}</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">Período</p>
+                  <p className="font-semibold text-green-800">{savedReportData.periodo}</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Animales</p>
+                  <p className="font-semibold text-purple-800">{savedReportData.totalAnimalesRegistrados}</p>
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">En Tratamiento</p>
+                  <p className="font-semibold text-orange-800">{savedReportData.animalesEnTratamiento}</p>
+                </div>
+              </div>
+              
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">Animales Rescatados</p>
+                  <p className="font-semibold text-red-800">{savedReportData.animalesRescatados}</p>
+                </div>
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">Animales Liberados</p>
+                  <p className="font-semibold text-yellow-800">{savedReportData.animalesLiberados}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <Button 
+                  onClick={() => {
+                    setReportSaved(false);
+                    setSavedReportData(null);
+                  }}
+                  className="bg-gray-500 text-white hover:bg-gray-600 px-4"
+                >
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

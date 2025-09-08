@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
+import { Navbar } from "../../../components/Navbar";
 
 export const Geolocation = (): JSX.Element => {
   const { id } = useParams();
@@ -26,38 +27,15 @@ export const Geolocation = (): JSX.Element => {
 
   return (
     <div className="min-h-screen bg-green-400/80">
-      {/* Header */}
-      <header className="bg-green-500/80 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img src="/imagenes/Patota.png" alt="Logo" className="w-10 h-10" />
-            <h1 className="text-white text-xl">Geolocalización y Monitoreo</h1>
-          </div>
-          <nav className="flex gap-6">
-            <Link to="/reports" className="text-white flex items-center gap-2">
-              <img src="/imagenes/reportesillo.png" alt="Reportes" className="w-10 h-10" />
-              Reportes
-            </Link>
-            <Link to="/management" className="text-white flex items-center gap-2">
-              <img src="/imagenes/Gestion.png" alt="Gestiones" className="w-12 h-12" />
-              Gestiones
-            </Link>
-            <Link to="/pets" className="text-white flex items-center gap-2">
-              <img src="/imagenes/home.png" alt="Home" className="w-8 h-8" />
-              Home
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar 
+        title="Geolocalización y Monitoreo" 
+        showBackButton={true} 
+        onBackClick={() => navigate(-1)} 
+      />
 
       <div className="container mx-auto p-4">
-        <div className="flex items-center gap-4 mb-6">
-          <button onClick={() => navigate(-1)} className="text-white hover:text-gray-200">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
-          <h2 className="text-white text-xl">Geolocalización y Monitoreo Animal {id}</h2>
+        <div className="mb-6">
+          <h2 className="text-white text-xl font-semibold">Geolocalización y Monitoreo Animal {id}</h2>
         </div>
 
         {geoData.fecha && geoData.ubicacion ? (

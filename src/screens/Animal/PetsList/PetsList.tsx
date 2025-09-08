@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect,useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { Navbar } from "../../../components/Navbar";
 import { AnimalDetails } from "../AnimalDetails/AnimalDetails";
 import { AddAnimal } from "../AddAnimal/AddAnimal";
-import { RescuerDetails } from "../../Rescatista/RescuerDetails/RescuerDetails";
 import { EditRescuer } from "../../Rescatista/EditRescuer/EditRescuer";
 import { usePets } from "../../../services/usePets";
 
@@ -13,10 +13,9 @@ export const PetsList = (): JSX.Element => {
   const [selectedAnimal, setSelectedAnimal] = useState<any | null>(null);
   const [showAddAnimal, setShowAddAnimal] = useState(false);
   const [showEditAnimal, setShowEditAnimal] = useState(false);
-  const [showRescuerDetails, setShowRescuerDetails] = useState<number | null>(null);
   const [showAddRescuer, setShowAddRescuer] = useState(false);
   const [currentRescuerId, setCurrentRescuerId] = useState<number | null>(null);
-  const [currentRescuerFecha, setCurrentRescuerFecha] = useState<string | null>(null);
+  const [, setCurrentRescuerFecha] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -57,83 +56,79 @@ export const PetsList = (): JSX.Element => {
 
   return (
     <div className="min-h-screen bg-green-400/80">
-      {/* Header */}
-      <header className="bg-green-500/80 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img src="imagenes/Patota.png" alt="Logo" className="w-10 h-10" />
-            <h1 className="text-white text-xl">Lista de Animales</h1>
+      <Navbar title="Lista de Animales" />
+
+      {/* Gestiones Dropdown */}
+      <div className="container mx-auto p-4">
+        <div className="flex justify-end mb-4">
+          <div className="relative" ref={filterRef}>
+            <button 
+              onClick={() => setShowFilter(!showFilter)} 
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+            >
+              Gestiones
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showFilter && (
+              <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg z-50 w-40">
+                <button 
+                  className="w-full text-left px-4 py-2 hover:bg-green-100 transition-colors duration-200"
+                  onClick={() => {
+                    navigate("/adopciones");
+                    setShowFilter(false);
+                  }}
+                >
+                  Doméstico
+                </button>
+                <button 
+                  className="w-full text-left px-4 py-2 hover:bg-green-100 transition-colors duration-200"
+                  onClick={() => {
+                    navigate("/liberaciones");
+                    setShowFilter(false);
+                  }}
+                >
+                  Silvestre
+                </button>
+              </div>
+            )}
           </div>
-          <nav className="flex gap-6 items-center">
-            <Link to="/reports" className="text-white flex items-center gap-2">
-              <img src="imagenes/reportesillo.png" alt="Reportes" className="w-10 h-10" />
-              Reportes
-            </Link>
-
-            <div className="relative" ref={filterRef}>
-              <button 
-                onClick={() => setShowFilter(!showFilter)} 
-                className="text-white flex items-center gap-2"
-              >
-                <img src="imagenes/Gestion.png" alt="Gestiones" className="w-12 h-12" />
-                Gestiones
-              </button>
-
-              {showFilter && (
-                <div className="absolute right-0 mt-2 bg-white border rounded shadow-md z-50 w-40">
-                  <button 
-                    className="w-full text-left px-4 py-2 hover:bg-green-100"
-                    onClick={() => {
-                      navigate("/adopciones");
-                      setShowFilter(false);
-                    }}
-                  >
-                    Doméstico
-                  </button>
-                  <button 
-                    className="w-full text-left px-4 py-2 hover:bg-green-100"
-                    onClick={() => {
-                      navigate("/liberaciones");
-                      setShowFilter(false);
-                    }}
-                  >
-                    Silvestre
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <Link to="/pets" className="text-white flex items-center gap-2">
-              <img src="imagenes/home.png" alt="Home" className="w-8 h-8" />
-              Home
-            </Link>
-            <Link to="/" className="text-white flex items-center gap-2">
-              Cerrar Sesión
-              <img src="imagenes/cerrar_sesion.png" alt="Logout" className="w-6 h-6" />
-            </Link>
-          </nav>
         </div>
-      </header>
+      </div>
 
       {/* Search Bar */}
       <div className="container mx-auto p-4">
         <div className="relative">
           <Input
             type="search"
-            placeholder="Búsqueda por nombre del animal..."
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white"
-            // ⬇️ Controlado
+            placeholder="🔍 Buscar animal por nombre..."
+            className="w-full pl-4 pr-12 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-green-500 transition-colors duration-200 text-lg"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Escape") setQuery("");
             }}
-            aria-label="Buscar por nombre"
+            aria-label="Buscar animal por nombre"
           />
-          <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <img src="imagenes/lupa.png" alt="Clear search" className="w-6 h-6" />
-          </button>
+          {query && (
+            <button 
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              title="Limpiar búsqueda"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
+        {query && (
+          <p className="text-white text-sm mt-2 ml-1">
+            Mostrando {filteredPets.length} resultado{filteredPets.length !== 1 ? 's' : ''} para "{query}"
+          </p>
+        )}
       </div>
 
       {/* Pets Grid */}
@@ -154,21 +149,45 @@ export const PetsList = (): JSX.Element => {
               <p className="text-gray-600">Nombre: {pet.name}</p>
               <p className="text-gray-600">Especie: {pet.species}</p>
               <p className="text-gray-600">Tipo: {pet.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}</p>
-              <p className="text-gray-600 mb-2">Rescatista: {pet.rescuer?.name}</p>
-              <div className="flex gap-2">
+              <p className="text-gray-600">Rescatista: {pet.rescuer?.name}</p>
+              <p className={`text-sm ${pet.veterinarian ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                Veterinario: {pet.veterinarian?.name || 'Sin asignar'}
+              </p>
+              <div className="flex gap-2 mt-3">
                 <Button 
                   variant="outline" 
-                  className="flex-1 bg-green-500 text-white hover:bg-green-600"
+                  className="flex-1 bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
                   onClick={() => setSelectedAnimal(pet)}
                 >
-                  Datos
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Ver Detalles
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="flex-1 bg-green-500 text-white hover:bg-green-600"
+                  className={`flex-1 transition-colors duration-200 flex items-center gap-2 ${
+                    pet.veterinarian 
+                      ? "bg-blue-500 text-white hover:bg-blue-600" 
+                      : "bg-green-500 text-white hover:bg-green-600"
+                  }`}
                   onClick={() => navigate(`/veterinario/${pet.id}`)}
                 >
-                  Veterinario
+                  {pet.veterinarian ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Ver Veterinario
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Asignar Veterinario
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -176,18 +195,21 @@ export const PetsList = (): JSX.Element => {
         </div>
       </div>
 
-      {/* Botón Flotante para Añadir Rescatista (más arriba) */}
+      {/* Botón Flotante para Añadir Rescatista */}
       <button
         onClick={() => setShowAddRescuer(true)}
-        className="fixed bottom-24 right-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg mb-4"
-        title="Agregar Rescatista"
+        className="fixed bottom-24 right-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-105 group"
+        title="Registrar nuevo rescatista"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
+        <span className="absolute right-16 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+          Registrar Rescatista
+        </span>
       </button>
       
-      {/* Botón Flotante para Añadir Animal (más abajo) */}
+      {/* Botón Flotante para Añadir Animal */}
       <button
         onClick={() => {
           if (currentRescuerId !== null) {
@@ -196,14 +218,19 @@ export const PetsList = (): JSX.Element => {
             alert("Primero debes registrar un rescatista.");
           }
         }}
-        className={`fixed bottom-8 right-8 text-white rounded-full p-4 shadow-lg ${
+        className={`fixed bottom-8 right-8 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-105 group ${
           currentRescuerId !== null ? "bg-green-500 hover:bg-green-600" : "bg-gray-400 cursor-not-allowed"
         }`}
-        title="Agregar Animal"
+        title={currentRescuerId !== null ? "Registrar nuevo animal" : "Primero registra un rescatista"}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
+        <span className={`absolute right-16 top-1/2 transform -translate-y-1/2 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap ${
+          currentRescuerId !== null ? "bg-green-600 text-white" : "bg-gray-500 text-white"
+        }`}>
+          {currentRescuerId !== null ? "Registrar Animal" : "Registra Rescatista Primero"}
+        </span>
       </button>
 
 
@@ -221,8 +248,6 @@ export const PetsList = (): JSX.Element => {
 
       {showAddAnimal && (
         <AddAnimal 
-          rescuerId={currentRescuerId !== null ? String(currentRescuerId) : undefined} 
-          fechaRescate={currentRescuerFecha || undefined}
           onClose={() => {
             setShowAddAnimal(false);
             setCurrentRescuerId(null);
@@ -238,14 +263,6 @@ export const PetsList = (): JSX.Element => {
       {showAddRescuer && (
         <EditRescuer
           animalId={0}
-          onClose={() => setShowAddRescuer(false)}
-          onSuccess={handleAddRescuerSuccess}
-        />
-      )}
-
-      {showAddRescuer && (
-        <EditRescuer
-          animalId={1} // Podés pasar el id real del animal si lo tenés
           onClose={() => setShowAddRescuer(false)}
           onSuccess={handleAddRescuerSuccess}
         />

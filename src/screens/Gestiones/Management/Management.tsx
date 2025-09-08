@@ -1,12 +1,13 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { Navbar } from "../../../components/Navbar";
 
 export const Management = (): JSX.Element => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData] = useState({
     nombreAnimal: 'Nombre Animal',
     estado: 'En adopción, Adoptado, Liberado',
     nombreAdoptante: 'Nombre del adoptante',
@@ -20,38 +21,15 @@ export const Management = (): JSX.Element => {
   if (isEditing) {
     return (
       <div className="min-h-screen bg-green-400/80">
-        {/* Header */}
-        <header className="bg-green-500/80 p-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <img src="/imagenes/Patota.png" alt="Logo" className="w-10 h-10" />
-              <h1 className="text-white text-xl">Gestión de Adopciones y Liberaciones</h1>
-            </div>
-            <nav className="flex gap-6">
-              <Link to="/reports" className="text-white flex items-center gap-2">
-                <img src="/imagenes/reportesillo.png" alt="Reportes" className="w-10 h-10" />
-                Reportes
-              </Link>
-              <Link to="/management" className="text-white flex items-center gap-2">
-                <img src="/imagenes/Gestion.png" alt="Gestiones" className="w-12 h-12" />
-                Gestiones
-              </Link>
-              <Link to="/pets" className="text-white flex items-center gap-2">
-                <img src="/imagenes/home.png" alt="Home" className="w-8 h-8" />
-                Home
-              </Link>
-            </nav>
-          </div>
-        </header>
+        <Navbar 
+          title="Gestión de Adopciones y Liberaciones" 
+          showBackButton={true} 
+          onBackClick={() => setIsEditing(false)} 
+        />
 
         <div className="container mx-auto p-4">
-          <div className="flex items-center gap-4 mb-6">
-            <button onClick={() => setIsEditing(false)} className="text-white hover:text-gray-200">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </button>
-            <h2 className="text-white text-xl">Gestión de Adopciones y Liberaciones</h2>
+          <div className="mb-6">
+            <h2 className="text-white text-xl font-semibold">Gestión de Adopciones y Liberaciones</h2>
           </div>
 
           <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -156,38 +134,14 @@ export const Management = (): JSX.Element => {
 
   return (
     <div className="min-h-screen bg-green-400/80">
-      {/* Header */}
-      <header className="bg-green-500/80 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img src="/paw-logo.svg" alt="Logo" className="w-8 h-8" />
-            <h1 className="text-white text-xl">Gestión de Adopciones y Liberaciones</h1>
-          </div>
-          <nav className="flex gap-6">
-            <Link to="/reports" className="text-white flex items-center gap-2">
-              <img src="/reports-icon.svg" alt="Reportes" className="w-6 h-6" />
-              Reportes
-            </Link>
-            <Link to="/management" className="text-white flex items-center gap-2">
-              <img src="/management-icon.svg" alt="Gestiones" className="w-6 h-6" />
-              Gestiones
-            </Link>
-            <Link to="/" className="text-white flex items-center gap-2">
-              <img src="/home-icon.svg" alt="Home" className="w-6 h-6" />
-              Home
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar 
+        title="Gestión de Adopciones y Liberaciones" 
+       
+      />
 
       <div className="container mx-auto p-4">
-        <div className="flex items-center gap-4 mb-6">
-          <button onClick={() => navigate(-1)} className="text-white hover:text-gray-200">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
-          <h2 className="text-white text-xl">Gestión de Adopciones y Liberaciones</h2>
+        <div className="mb-6">
+          <h2 className="text-white text-xl font-semibold">Gestión de Adopciones y Liberaciones</h2>
         </div>
 
         <div className="bg-white rounded-lg p-6 shadow-lg">

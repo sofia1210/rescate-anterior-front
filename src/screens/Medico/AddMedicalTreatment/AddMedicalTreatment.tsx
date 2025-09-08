@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
+import { Navbar } from "../../../components/Navbar";
 
 export const AddMedicalTreatment = (): JSX.Element => {
   const { id } = useParams();

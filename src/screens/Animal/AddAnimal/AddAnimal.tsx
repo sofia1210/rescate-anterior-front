@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { useNavigate } from "react-router-dom";
 import { createAnimal } from "../../../services/dataService";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 
 interface AddAnimalProps {
   onClose: () => void;
-  rescuerId?: string | null;
 }
 
 type TipoAnimal = "silvestre" | "doméstico" | "";
@@ -41,9 +39,7 @@ const center = {
 
 export const AddAnimal = ({
   onClose,
-  rescuerId,
 }: AddAnimalProps): JSX.Element => {
-  const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
 
   const [formData, setFormData] = useState<FormData>({
@@ -101,23 +97,29 @@ export const AddAnimal = ({
     e.preventDefault();
 
     try {
-      const dataToSend = new FormData();
+      // Preparar datos según la estructura de la API
+      const animalData = {
+        nombre: formData.nombre,
+        especie: formData.especie,
+        raza: formData.raza,
+        sexo: formData.sexo,
+        edad: 1, // Valor por defecto
+        estadoSalud: formData.estadoSalud,
+        tipoAlimentacion: formData.tipoAlimentacion,
+        cantidadRecomendada: formData.cantidadRecomendada,
+        frecuenciaRecomendada: formData.frecuenciaRecomendada,
+        tipo: formData.tipo === "doméstico" ? "Doméstico" : "Silvestre",
+        nombreRescatista: "Rescatista Temporal", // Temporal hasta integrar con rescatistas
+        telefonoRescatista: "00000000", // Temporal hasta integrar con rescatistas
+        fechaRescate: formData.fechaRescate,
+        detallesRescate: formData.ubicacionRescate,
+        latitud: parseFloat(formData.latitud) || -17.7833,
+        longitud: parseFloat(formData.longitud) || -63.1821,
+        descripcion: formData.ubicacionRescate
+      };
 
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value && key !== "imagen") {
-          dataToSend.append(key, value);
-        }
-      });
-
-      if (formData.imagen) {
-        dataToSend.append("imagen", formData.imagen);
-      }
-
-      if (rescuerId) {
-        dataToSend.append("rescatistaId", rescuerId);
-      }
-
-      const response = await createAnimal(dataToSend);
+      console.log("📤 Enviando datos del animal:", animalData);
+      const response = await createAnimal(animalData);
       console.log("✅ Animal registrado:", response.data);
       onClose();
     } catch (error) {

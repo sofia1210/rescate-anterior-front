@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Navbar } from "../../../components/Navbar";
 
 export const MedicalTreatmentView = (): JSX.Element => {
   const { id } = useParams();
@@ -37,30 +38,12 @@ export const MedicalTreatmentView = (): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen bg-green-100">
-      {/* NAVBAR */}
-      <header className="bg-green-500/80 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img src="/imagenes/Patota.png" alt="Logo" className="w-10 h-10" />
-            <h1 className="text-white text-xl">Tratamiento Médico</h1>
-          </div>
-          <nav className="flex gap-6">
-            <Link to="/reports" className="text-white flex items-center gap-2">
-              <img src="/imagenes/reportesillo.png" alt="Reportes" className="w-10 h-10" />
-              Reportes
-            </Link>
-            <Link to="/management" className="text-white flex items-center gap-2">
-              <img src="/imagenes/Gestion.png" alt="Gestiones" className="w-12 h-12" />
-              Gestiones
-            </Link>
-            <Link to="/pets" className="text-white flex items-center gap-2">
-              <img src="/imagenes/home.png" alt="Home" className="w-8 h-8" />
-              Home
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="min-h-screen bg-green-400/80">
+      <Navbar 
+        title="Tratamiento Médico" 
+        showBackButton={true} 
+        onBackClick={() => navigate(-1)} 
+      />
 
       <div className="p-6">
         <h1 className="text-2xl font-semibold text-green-800 mb-6">

@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Navbar } from "../../../components/Navbar";
 
 export const Liberaciones = (): JSX.Element => {
   const navigate = useNavigate();
@@ -42,57 +43,40 @@ export const Liberaciones = (): JSX.Element => {
 
   return (
     <div className="min-h-screen bg-green-400/80">
-      {/* Header */}
-      <header className="bg-green-500/80 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img src="/imagenes/Patota.png" alt="Logo" className="w-10 h-10" />
-            <h1 className="text-white text-xl">Liberaciones</h1>
+      <Navbar title="Liberaciones" />
+
+      {/* Gestiones Dropdown */}
+      <div className="container mx-auto p-4">
+        <div className="flex justify-end mb-4">
+          <div className="relative" ref={filterRef}>
+            <button 
+              onClick={() => setShowFilter(!showFilter)} 
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+            >
+              Gestiones
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showFilter && (
+              <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg z-50 w-40">
+                {location.pathname === "/liberaciones" && (
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-green-100 transition-colors duration-200"
+                    onClick={() => {
+                      navigate("/adopciones");
+                      setShowFilter(false);
+                    }}
+                  >
+                    Doméstico
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-          <nav className="flex gap-6 items-center">
-            <Link to="/reports" className="text-white flex items-center gap-2">
-              <img src="/imagenes/reportesillo.png" alt="Reportes" className="w-10 h-10" />
-              Reportes
-            </Link>
-
-            {/* Botón Gestiones */}
-            <div className="relative" ref={filterRef}>
-              <button 
-                onClick={() => setShowFilter(!showFilter)} 
-                className="text-white flex items-center gap-2"
-              >
-                <img src="/imagenes/Gestion.png" alt="Gestiones" className="w-12 h-12" />
-                Gestiones
-              </button>
-
-              {showFilter && (
-                <div className="absolute right-0 mt-2 bg-white border rounded shadow-md z-50 w-40">
-                  {location.pathname === "/liberaciones" && (
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-green-100"
-                      onClick={() => {
-                        navigate("/adopciones");
-                        setShowFilter(false);
-                      }}
-                    >
-                      Doméstico
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <Link to="/pets" className="text-white flex items-center gap-2">
-              <img src="/imagenes/home.png" alt="Home" className="w-8 h-8" />
-              Home
-            </Link>
-            <Link to="/" className="text-white flex items-center gap-2">
-              Cerrar Sesión
-              <img src="/imagenes/cerrar_sesion.png" alt="Logout" className="w-6 h-6" />
-            </Link>
-          </nav>
         </div>
-      </header>
+      </div>
 
       {/* Lista de Animales Silvestres */}
       <div className="container mx-auto p-6">

@@ -26,6 +26,13 @@ export type Pet = {
     rescueDate?: string;      // fechaRescate
     rescueLocation?: string;  // ubicacionRescate
   };
+  veterinarian?: {
+    id?: string;
+    name?: string;
+    phone?: string;
+    email?: string;
+    especialidad?: string;
+  };
 };
 
 type PostgresAnimal = {
@@ -112,7 +119,6 @@ export function mapPostgresToPet(a: PostgresAnimal): Pet {
 
 /** ===== Hook: fetchea y entrega pets[] ===== */
 export function usePets(endpoint = "/animales") {
-  const [raw, setRaw] = useState<PostgresAnimal[] | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,12 +128,44 @@ export function usePets(endpoint = "/animales") {
     (async () => {
       try {
         setLoading(true);
+        
+        // Obtener animales
         const res = await fetch(endpoint, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: ApiResponse = await res.json();
         const list = Array.isArray(data) ? data : data.postgres ?? [];
+        
         if (!alive) return;
-        setRaw(list);
+        
+        // Mapear animales básicos primero
+        const mappedPets = list.map(mapPostgresToPet);
+        
+        // Intentar obtener evaluaciones médicas para verificar veterinarios
+        try {
+          const evalRes = await fetch(`${import.meta.env.VITE_API_URL}/evaluations`, { cache: "no-store" });
+          if (evalRes.ok) {
+            const evaluations = await evalRes.json();
+            
+            // Agregar información de veterinario si existe
+            mappedPets.forEach(pet => {
+              const animalEvaluations = evaluations.filter((evaluation: any) => 
+                evaluation.nombreAnimal === pet.name
+              );
+              
+              if (animalEvaluations.length > 0) {
+                const latestEvaluation = animalEvaluations[0];
+                pet.veterinarian = {
+                  name: latestEvaluation.responsableNombre || "Veterinario Asignado",
+                  especialidad: "Medicina Veterinaria"
+                };
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("No se pudieron cargar las evaluaciones médicas:", e);
+        }
+        
+        setPets(mappedPets);
       } catch (e: any) {
         if (!alive) return;
         setError(e?.message ?? "Error al cargar animales");
@@ -137,10 +175,6 @@ export function usePets(endpoint = "/animales") {
     })();
     return () => { alive = false; };
   }, [endpoint]);
-
-  const mapped = useMemo(() => (raw ?? []).map(mapPostgresToPet), [raw]);
-
-  useEffect(() => { setPets(mapped); }, [mapped]);
 
   return { pets, loading, error };
 }
