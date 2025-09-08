@@ -67,7 +67,7 @@ export const Login = (): JSX.Element => {
                 id="username"
                 name="username"
                 className="bg-transparent border-white/30 text-white placeholder:text-white/50"
-                placeholder="Ingresa tu usuario"
+                placeholder="Ingresa tu correo"
               />
             </div>
 

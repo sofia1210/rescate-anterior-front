@@ -1,84 +1,56 @@
 // src/services/dataService.ts
 import { api } from "../lib/api";
 
-// Interfaces para datos principales
-export interface AnimalData {
-  nombre: string;
-  especie: string;
-  raza: string;
-  sexo: string;
-  edad: number;
-  estadoSalud: string;
-  tipoAlimentacion: string;
-  cantidadRecomendada: string;
-  frecuenciaRecomendada: string;
-  tipo: string;
-  nombreRescatista: string;
-  telefonoRescatista: string;
-  fechaRescate: string;
-  detallesRescate: string;
-  latitud: number;
-  longitud: number;
-  descripcion: string;
-}
-
-export interface RescatistaData {
+// Tipos opcionales (ajusta a tu backend si hace falta)
+export interface Rescatista {
+  _id?: string;
+  id?: string | number;
   nombre: string;
   telefono: string;
-  fechaRescatista: string;
-  latitud: number;
-  longitud: number;
-  descripcion: string;
+  fechaRescatista: string; // yyyy-mm-dd
+  ubicacionRescate?: string;
+  descripcion?: string;
+  latitud?: string;
+  longitud?: string;
+  imagenUrl?: string;
 }
 
-export interface VeterinarioData {
-  nombre: string;
-  telefono: string;
-  especialidad: string;
-  email: string;
-}
-
-// Endpoints principales - Corregidos para coincidir con la API
-export const getAllRescatistas = () => api.get("/rescatistas");
+// Listados
+export const getAllRescatistas = () => api.get<Rescatista[]>("/rescatistas");
 export const getAllAnimales = () => api.get("/animales");
 export const getAllVeterinarios = () => api.get("/veterinarios");
 export const getAllAdopciones = () => api.get("/adopciones");
 
-// CRUD Rescatista - Actualizado para usar JSON
-export const createRescatista = (data: RescatistaData) => {
-  return api.post("/rescatistas", data);
-};
+// CRUD Rescatista
+export const getRescatistaById = (id: string) =>
+  api.get<Rescatista>(`/rescatistas/${id}`).then((r) => r.data);
 
-export const updateRescatista = (id: string, data: RescatistaData) => {
-  return api.put(`/rescatistas/${id}`, data);
-};
+export const createRescatista = (formData: FormData) =>
+  api.post<Rescatista>("/rescatistas", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 
-export const deleteRescatista = (id: string) => {
-  return api.delete(`/rescatistas/${id}`);
-};
+export const updateRescatista = (id: string, formData: FormData) =>
+  api.put<Rescatista>(`/rescatistas/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 
-// CRUD Animal - Usa JSON según la API
-export const createAnimal = (data: AnimalData) => {
-  return api.post("/animales", data);
-};
+export const deleteRescatista = (id: string) =>
+  api.delete<{ deleted: boolean }>(`/rescatistas/${id}`);
 
-export const updateAnimal = (id: string, data: AnimalData) => {
-  return api.put(`/animales/${id}`, data);
-};
+export const upsertRescatista = (formData: FormData, id?: string) =>
+  (id ? updateRescatista(id, formData) : createRescatista(formData));
 
-export const deleteAnimal = (id: string) => {
-  return api.delete(`/animales/${id}`);
-};
+// CRUD Animal (multipart, sin imagen por ahora)
+export const createAnimal = (formData: FormData) =>
+  api.post("/animales", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 
-// CRUD Veterinario
-export const createVeterinario = (data: VeterinarioData) => {
-  return api.post("/veterinarios", data);
-};
+export const updateAnimal = (id: string, formData: FormData) =>
+  api.put(`/animales/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 
-export const updateVeterinario = (id: string, data: VeterinarioData) => {
-  return api.put(`/veterinarios/${id}`, data);
-};
+export const deleteAnimal = (id: string) => api.delete(`/animales/${id}`);
 
-export const deleteVeterinario = (id: string) => {
-  return api.delete(`/veterinarios/${id}`);
-};

@@ -83,20 +83,21 @@ type ApiResponse =
 /** ===== Util: mapea un registro Postgres → Pet ===== */
 export function mapPostgresToPet(a: PostgresAnimal): Pet {
   // Imagen por defecto si viene null: se infiere por especie (muy simple)
-  const fallbackImage = (() => {
-    const e = (a.especie || "").toLowerCase();
-    if (e.includes("can") || e.includes("perro") || e.includes("dog")) return "/dog.svg";
-    if (e.includes("fel") || e.includes("gato") || e.includes("cat")) return "/cat.svg";
-    if (e.includes("ave") || e.includes("pájaro") || e.includes("loro")) return "/bird.svg";
-    return "/pet.svg";
-  })();
+  const fallbackImage = "/imagenes/patita.png";
+  const normalize = (s: string | undefined | null) =>
+    (s || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  const tipoNorm = normalize(a.tipo);
+  const tipoUnified = tipoNorm === "domestico" ? "domestico" : tipoNorm === "silvestre" ? "silvestre" : (a.tipo || "");
 
   return {
     id: a.id,
     name: a.nombre,
     species: a.especie,
     breed: a.raza,
-    image: a.imagen ?? fallbackImage,
+    image: a.imagen ? `/imagenes/${a.imagen}` : fallbackImage,
     sex: a.sexo,
     age: typeof a.edad === "number" ? `${a.edad} ${a.edad === 1 ? "año" : "años"}` : undefined,
     healthStatus: a.estadoSalud,
@@ -106,7 +107,7 @@ export function mapPostgresToPet(a: PostgresAnimal): Pet {
     recommendedFrequency: a.frecuenciaRecomendada,
     releaseDate: "Pendiente",        // no existe en tu esquema → default
     releaseLocation: "Por determinar", // no existe en tu esquema → default
-    tipo: a.tipo,
+    tipo: tipoUnified,
     rescuer: {
       id: a.rescatista?.id ?? a.rescatista_id,
       name: a.rescatista?.nombre,
