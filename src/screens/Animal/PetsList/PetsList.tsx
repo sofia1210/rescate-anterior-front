@@ -160,7 +160,7 @@ export const PetsList = (): JSX.Element => {
 
       {/* Pets Grid */}
       <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
           {filteredPets.map((pet: any) => (
             <div key={pet.id} className="bg-white rounded-lg p-4 shadow-md">
               <div className="flex justify-center mb-4">

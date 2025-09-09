@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Navbar } from "../../../components/Navbar";
+import { VeterinarianList } from "../VeterinarioList";
 
 export const Veterinario = (): JSX.Element => {
   const { id } = useParams();
@@ -24,9 +25,10 @@ export const Veterinario = (): JSX.Element => {
 
       {/* Contenido */}
       <div className="container mx-auto p-4">
-        <div className="mb-6">
-          <h2 className="text-white text-xl font-semibold">Veterinario asignado al Animal {id}</h2>
+        <div className="mb-6 hidden">
+          <h2 className="text-white text-xl font-semibold">Veterinario asignado</h2>
         </div>
+        <VeterinarianList/>
 
         <div className="bg-white rounded-lg p-6 shadow-lg space-y-6">
           {!veterinario ? (
