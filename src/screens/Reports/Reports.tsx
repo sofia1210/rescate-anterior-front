@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Navbar } from "../../components/Navbar";
@@ -8,30 +8,176 @@ export const Reports = (): JSX.Element => {
   const [isSaving, setIsSaving] = useState(false);
   const [reportSaved, setReportSaved] = useState(false);
   const [savedReportData, setSavedReportData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [animals, setAnimals] = useState<any[]>([]);
+  const [rescuers, setRescuers] = useState<any[]>([]);
+  const [veterinarians, setVeterinarians] = useState<any[]>([]);
+  const [evaluations, setEvaluations] = useState<any[]>([]);
 
-  // Datos hardcodeados del reporte
-  const reportData = {
-    fechaGeneracion: new Date().toLocaleDateString('es-ES'),
-    periodo: "Enero - Noviembre 2024",
-    totalAnimalesRegistrados: 156,
-    animalesEnTratamiento: 23,
-    animalesRescatados: 134,
-    animalesLiberados: 45,
-    porcentajeRegistrados: 86,
-    porcentajeTratamiento: 34,
-    porcentajeRescatados: 86,
-    porcentajeLiberados: 34
-  };
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const apiBase = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL).replace(/\/$/, "") : "";
+        const endpoints = [
+          `${apiBase}/animales`,
+          `${apiBase}/rescatistas`,
+          `${apiBase}/veterinarios`,
+          `${apiBase}/evaluations`,
+        ];
+        const [aRes, rRes, vRes, eRes] = await Promise.all(
+          endpoints.map((url) => fetch(url).then((r) => r.json()).catch(() => ({ postgres: [] })))
+        );
+        const aData: any = aRes;
+        const rData: any = rRes;
+        const vData: any = vRes;
+        const eData: any = eRes;
+        if (!alive) return;
+        const toPg = (d: any) => (Array.isArray(d) ? d : (d?.postgres ?? []));
+        setAnimals(toPg(aData));
+        setRescuers(toPg(rData));
+        setVeterinarians(toPg(vData));
+        setEvaluations(toPg(eData));
+      } catch (e: any) {
+        if (!alive) return;
+        setError(e?.message ?? "No se pudieron cargar datos");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const metrics = useMemo(() => {
+    const totalAnimales = animals.length;
+    const saludOkSet = new Set(["muy bueno", "bueno", "sano", "excelente"]);
+    const normaliza = (s: string | null | undefined) => (s || "").toLowerCase().trim();
+    const animalesSaludOk = animals.filter((a: any) => saludOkSet.has(normaliza(a.estadoSalud))).length;
+    const animalesSaludNoOk = totalAnimales - animalesSaludOk;
+    const tipoDomestico = animals.filter((a: any) => normaliza(a.tipo).includes("domestico")).length;
+    const tipoSilvestre = animals.filter((a: any) => normaliza(a.tipo).includes("silvestre")).length;
+    const animalesConEvaluaciones = new Set((Array.isArray(evaluations) ? evaluations : []).map((ev: any) => ev.nombreAnimal || ev.animalId)).size;
+    const especieMap = new Map<string, number>();
+    animals.forEach((a: any) => {
+      const key = (a.especie || "").toString().trim() || "(Sin especie)";
+      especieMap.set(key, (especieMap.get(key) || 0) + 1);
+    });
+    const especiesTop = Array.from(especieMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const fechas = animals
+      .map((a: any) => a.fechaRescate)
+      .filter(Boolean)
+      .map((d: string) => new Date(d))
+      .filter((d: Date) => !isNaN(d.getTime()))
+      .sort((a: any, b: any) => a.getTime() - b.getTime());
+    const periodo = fechas.length ? `${fechas[0].toLocaleDateString('es-ES')} - ${fechas[fechas.length-1].toLocaleDateString('es-ES')}` : "Sin rango";
+
+    // Serie temporal por mes (YYYY-MM)
+    const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const monthToCount = new Map<string, number>();
+    (animals || []).forEach((a: any) => {
+      if (!a?.fechaRescate) return;
+      const d = new Date(a.fechaRescate);
+      if (isNaN(d.getTime())) return;
+      const key = monthKey(d);
+      monthToCount.set(key, (monthToCount.get(key) || 0) + 1);
+    });
+    const orderedMonths = Array.from(monthToCount.keys()).sort();
+    const lastMonths = orderedMonths.slice(-6); // últimos 6 meses
+    const byMonthLabels = lastMonths.map((k) => {
+      const [y, m] = k.split('-');
+      const d = new Date(Number(y), Number(m) - 1, 1);
+      return d.toLocaleDateString('es-ES', { month: 'short' });
+    });
+    const byMonthCounts = lastMonths.map((k) => monthToCount.get(k) || 0);
+    const byMonthMax = Math.max(1, ...byMonthCounts);
+
+    return { totalAnimales, animalesSaludOk, animalesSaludNoOk, tipoDomestico, tipoSilvestre, rescuerCount: rescuers.length, veterinarianCount: veterinarians.length, animalesConEvaluaciones, especiesTop, periodo, byMonthLabels, byMonthCounts, byMonthMax };
+  }, [animals, rescuers, veterinarians, evaluations]);
 
   const handleSaveReport = async () => {
     setIsSaving(true);
     
     // Simular guardado con delay
     setTimeout(() => {
-      setSavedReportData(reportData);
+      const snapshot = {
+        fechaGeneracion: new Date().toLocaleDateString('es-ES'),
+        periodo: metrics.periodo,
+        totalAnimalesRegistrados: metrics.totalAnimales,
+        animalesEnTratamiento: metrics.animalesConEvaluaciones,
+        animalesRescatados: metrics.totalAnimales,
+        animalesLiberados: metrics.tipoSilvestre,
+        porcentajeRegistrados: 100,
+        porcentajeTratamiento: metrics.totalAnimales ? Math.round((metrics.animalesConEvaluaciones / metrics.totalAnimales) * 100) : 0,
+        porcentajeRescatados: 100,
+        porcentajeLiberados: metrics.totalAnimales ? Math.round((metrics.tipoSilvestre / metrics.totalAnimales) * 100) : 0,
+        seriesMensual: {
+          labels: metrics.byMonthLabels,
+          valores: metrics.byMonthCounts,
+        },
+        animalesSaludOk: metrics.animalesSaludOk,
+        animalesSaludNoOk: metrics.animalesSaludNoOk,
+        tipoDomestico: metrics.tipoDomestico,
+        tipoSilvestre: metrics.tipoSilvestre,
+        rescuerCount: metrics.rescuerCount,
+        veterinarianCount: metrics.veterinarianCount,
+      } as const;
+
+      // Descargar PDF (jsPDF desde CDN)
+      const loadJsPDF = () => new Promise<any>((resolve, reject) => {
+        const existing: any = (window as any).jspdf?.jsPDF;
+        if (existing) return resolve(existing);
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.async = true;
+        s.onload = () => resolve((window as any).jspdf.jsPDF);
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      (async () => {
+        try {
+          const jsPDF: any = await loadJsPDF();
+          const doc = new jsPDF();
+          const dateStr = new Date().toISOString().slice(0,10);
+
+          doc.setFontSize(16);
+          doc.text('Reporte Automático', 14, 16);
+          doc.setFontSize(11);
+          doc.text(`Fecha: ${snapshot.fechaGeneracion}`, 14, 24);
+          doc.text(`Periodo: ${snapshot.periodo}`, 14, 30);
+
+          let y = 40;
+          const lines: Array<[string, string]> = [
+            ['Total animales', String(snapshot.totalAnimalesRegistrados)],
+            ['Con evaluaciones', String(snapshot.animalesEnTratamiento)],
+            ['Salud OK', String(snapshot.animalesSaludOk)],
+            ['Salud NO OK', String(snapshot.animalesSaludNoOk)],
+            ['Doméstico', String(snapshot.tipoDomestico)],
+            ['Silvestre', String(snapshot.tipoSilvestre)],
+            ['Rescatistas', String(snapshot.rescuerCount)],
+            ['Veterinarios', String(snapshot.veterinarianCount)],
+          ];
+          lines.forEach(([k, v]) => { doc.text(`${k}: ${v}`, 14, y); y += 6; });
+
+          if (snapshot.seriesMensual.labels.length) {
+            y += 4;
+            doc.text('Serie mensual (últimos 6 meses):', 14, y);
+            y += 6;
+            snapshot.seriesMensual.labels.forEach((lab, i) => {
+              doc.text(`${lab}: ${snapshot.seriesMensual.valores[i]}`, 16, y);
+              y += 6;
+            });
+          }
+
+          doc.save(`reporte-${dateStr}.pdf`);
+        } catch {}
+      })();
+
+      setSavedReportData(snapshot);
       setReportSaved(true);
       setIsSaving(false);
-    }, 2000);
+    }, 1000);
   };
 
   return (
@@ -47,64 +193,76 @@ export const Reports = (): JSX.Element => {
         </div>
 
         <div className="bg-white rounded-lg p-6 shadow-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Periodo del reporte Rango de Fechas de Rescate</h3>
-              <div className="h-64 bg-gray-100 rounded-lg p-4">
-                {/* Bar chart would go here */}
-                <div className="w-full h-full flex items-end justify-between gap-4">
-                  <div className="h-1/3 w-8 bg-blue-500"></div>
-                  <div className="h-1/4 w-8 bg-green-500"></div>
-                  <div className="h-2/3 w-8 bg-purple-500"></div>
-                  <div className="h-1/4 w-8 bg-pink-500"></div>
-                  <div className="h-1/6 w-8 bg-blue-300"></div>
-                  <div className="h-1/3 w-8 bg-yellow-500"></div>
-                </div>
-                <div className="flex justify-between mt-2 text-sm text-gray-600">
-                  <span>January</span>
-                  <span>February</span>
-                  <span>March</span>
-                  <span>April</span>
-                  <span>June</span>
-                  <span>November</span>
-                </div>
-              </div>
+          {loading ? (
+            <div className="h-40 flex items-center justify-center text-gray-600">
+              <svg className="animate-spin h-5 w-5 mr-2 text-green-500" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              Cargando datos...
             </div>
+          ) : error ? (
+            <div className="text-red-600">{error}</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="flex flex-col">
+                  <h3 className="text-lg font-semibold mb-4">Resumen de animales</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-green-50 rounded p-3">
+                      <div className="text-sm text-gray-600">Últimos 6 meses</div>
+                      <div className="text-2xl font-bold">{metrics.byMonthCounts.reduce((a, b) => a + b, 0)}</div>
+                    </div>
+                    <div className="bg-green-50 rounded p-3">
+                      <div className="text-sm text-gray-600">Mes con más rescates</div>
+                      <div className="text-2xl font-bold">
+                        {(() => {
+                          const idx = metrics.byMonthCounts.indexOf(Math.max(...metrics.byMonthCounts));
+                          return idx >= 0 ? (metrics.byMonthLabels[idx] || '-') : '-';
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-sm text-gray-600">Periodo: {metrics.periodo}</div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Total de animales registrados</h4>
-                <div className="text-3xl font-bold mb-2">86%</div>
-                <div className="h-8 bg-blue-100 rounded">
-                  <div className="h-full w-3/4 bg-blue-500 rounded"></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Total de animales registrados</h4>
+                    <div className="text-3xl font-bold mb-2">{metrics.totalAnimales}</div>
+                    <div className="h-8 bg-blue-100 rounded">
+                      <div className="h-full bg-blue-500 rounded" style={{ width: "100%" }}></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Animales con evaluaciones médicas</h4>
+                    <div className="text-3xl font-bold mb-2">{metrics.animalesConEvaluaciones}</div>
+                    <div className="h-8 bg-blue-100 rounded">
+                      <div className="h-full bg-blue-500 rounded" style={{ width: `${metrics.totalAnimales ? Math.round((metrics.animalesConEvaluaciones / metrics.totalAnimales) * 100) : 0}%` }}></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Animales con salud OK</h4>
+                    <div className="text-3xl font-bold mb-2">{metrics.animalesSaludOk}</div>
+                    <div className="h-8 bg-blue-100 rounded">
+                      <div className="h-full bg-green-500 rounded" style={{ width: `${metrics.totalAnimales ? Math.round((metrics.animalesSaludOk / metrics.totalAnimales) * 100) : 0}%` }}></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Animales salud NO OK</h4>
+                    <div className="text-3xl font-bold mb-2">{metrics.animalesSaludNoOk}</div>
+                    <div className="h-8 bg-blue-100 rounded">
+                      <div className="h-full bg-red-500 rounded" style={{ width: `${metrics.totalAnimales ? Math.round((metrics.animalesSaludNoOk / metrics.totalAnimales) * 100) : 0}%` }}></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Animales en tratamiento</h4>
-                <div className="text-3xl font-bold mb-2">+34%</div>
-                <div className="h-8 bg-blue-100 rounded">
-                  <div className="h-full w-1/3 bg-blue-500 rounded"></div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Animales rescatados</h4>
-                <div className="text-3xl font-bold mb-2">86%</div>
-                <div className="h-8 bg-blue-100 rounded">
-                  <div className="h-full w-3/4 bg-blue-500 rounded"></div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Animales liberados</h4>
-                <div className="text-3xl font-bold mb-2">+34%</div>
-                <div className="h-8 bg-blue-100 rounded">
-                  <div className="h-full w-1/3 bg-blue-500 rounded"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
+        </div>
 
           <div className="mt-8 flex justify-center">
             <Button 
@@ -188,6 +346,6 @@ export const Reports = (): JSX.Element => {
           )}
         </div>
       </div>
-    </div>
+    
   );
 };

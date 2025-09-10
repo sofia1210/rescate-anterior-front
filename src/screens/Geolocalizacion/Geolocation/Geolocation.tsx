@@ -4,7 +4,7 @@ import { Button } from "../../../components/ui/button";
 import { Navbar } from "../../../components/Navbar";
 import { getAnimalById } from "../../../services/dataService";
 import { createGeolocalizacion } from "../../../services/transferService";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, LoadScript } from "@react-google-maps/api";
 
 declare global {
   interface Window { google: any }
@@ -13,7 +13,7 @@ declare global {
 export const Geolocation = (): JSX.Element => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isLoaded } = useJsApiLoader({ id: "gmaps-loader", libraries: ["places"], googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || "AIzaSyCl9B-64vdVOiZTBQOIVUEX7RVFW4Wr_BE" });
+  // Usamos LoadScript para evitar conflictos de loader entre pantallas
   const [animalName, setAnimalName] = useState<string>("");
   const [newPos, setNewPos] = useState<{ lat: number; lng: number; descripcion?: string } | null>(null);
   const [mapReady, setMapReady] = useState<boolean>(false);
@@ -57,7 +57,7 @@ export const Geolocation = (): JSX.Element => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold mb-2">Seleccionar ubicación de traslado</h3>
           <div className="relative">
-            {(!isLoaded || !mapReady) && (
+            {!mapReady && (
               <div className="h-[380px] w-full flex items-center justify-center bg-gray-50 rounded border">
                 <div className="flex items-center gap-2 text-gray-600">
                   <svg className="animate-spin h-5 w-5 text-green-500" viewBox="0 0 24 24">
@@ -68,30 +68,30 @@ export const Geolocation = (): JSX.Element => {
                 </div>
               </div>
             )}
-            {isLoaded && (
+            <LoadScript googleMapsApiKey={(import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || "AIzaSyCl9B-64vdVOiZTBQOIVUEX7RVFW4Wr_BE"} libraries={["places"]}>
               <GoogleMap
-                mapContainerStyle={{ width: '100%', height: 380 }}
-                center={newPos || { lat: -17.7833, lng: -63.1821 }}
-                zoom={13}
-                onLoad={() => setMapReady(true)}
-                onClick={(e) => {
-                  if (!e.latLng) return;
-                  const lat = e.latLng.lat();
-                  const lng = e.latLng.lng();
-                  setNewPos({ lat, lng });
-                  try {
-                    const geocoder = new window.google.maps.Geocoder();
-                    geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
-                      if (status === 'OK' && results && results[0]) {
-                        setNewPos((prev) => prev ? { ...prev, descripcion: results[0].formatted_address } : { lat, lng, descripcion: results[0].formatted_address });
-                      }
-                    });
-                  } catch {}
-                }}
-              >
-                {newPos && <Marker position={{ lat: newPos.lat, lng: newPos.lng }} />}
-              </GoogleMap>
-            )}
+                  mapContainerStyle={{ width: '100%', height: 380 }}
+                  center={newPos || { lat: -17.7833, lng: -63.1821 }}
+                  zoom={13}
+                  onLoad={() => setMapReady(true)}
+                  onClick={(e) => {
+                    if (!e.latLng) return;
+                    const lat = e.latLng.lat();
+                    const lng = e.latLng.lng();
+                    setNewPos({ lat, lng });
+                    try {
+                      const geocoder = new window.google.maps.Geocoder();
+                      geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+                        if (status === 'OK' && results && results[0]) {
+                          setNewPos((prev) => prev ? { ...prev, descripcion: results[0].formatted_address } : { lat, lng, descripcion: results[0].formatted_address });
+                        }
+                      });
+                    } catch {}
+                  }}
+                >
+                  {newPos && <Marker position={{ lat: newPos.lat, lng: newPos.lng }} />}
+                </GoogleMap>
+            </LoadScript>
           </div>
           <div className="mt-3">
             <label className="block text-sm font-medium mb-1">Descripción de la ubicación</label>
