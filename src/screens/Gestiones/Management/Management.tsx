@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Navbar } from "../../../components/Navbar";
+import { useThemeClasses } from "../../../hooks/useThemeClasses";
 
 export const Management = (): JSX.Element => {
-  const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const [isEditing, setIsEditing] = useState(false);
   const [formData] = useState({
     nombreAnimal: 'Nombre Animal',
@@ -20,7 +20,10 @@ export const Management = (): JSX.Element => {
 
   if (isEditing) {
     return (
-      <div className="min-h-screen bg-green-400/80">
+      <div className={getThemeClasses(
+        "min-h-screen bg-green-400/80",
+        "min-h-screen bg-green-50"
+      )}>
         <Navbar 
           title="Gestión de Adopciones y Liberaciones" 
           showBackButton={true} 
@@ -32,7 +35,10 @@ export const Management = (): JSX.Element => {
             <h2 className="text-white text-xl font-semibold">Gestión de Adopciones y Liberaciones</h2>
           </div>
 
-          <div className="bg-white rounded-lg p-6 shadow-lg">
+          <div className={getThemeClasses(
+            "bg-white rounded-lg p-6 shadow-lg",
+            "bg-white rounded-lg p-6 shadow-lg shadow-green-200/50 border border-green-100"
+          )}>
             <div className="grid grid-cols-2 gap-8">
               <div>
                 <div className="mb-4">
@@ -133,7 +139,10 @@ export const Management = (): JSX.Element => {
   }
 
   return (
-    <div className="min-h-screen bg-green-400/80">
+    <div className={getThemeClasses(
+      "min-h-screen bg-green-400/80",
+      "min-h-screen bg-green-50"
+    )}>
       <Navbar 
         title="Gestión de Adopciones y Liberaciones" 
        
@@ -144,7 +153,10 @@ export const Management = (): JSX.Element => {
           <h2 className="text-white text-xl font-semibold">Gestión de Adopciones y Liberaciones</h2>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-lg">
+        <div className={getThemeClasses(
+          "bg-white rounded-lg p-6 shadow-lg",
+          "bg-white rounded-lg p-6 shadow-lg shadow-green-200/50 border border-green-100"
+        )}>
           <div className="grid grid-cols-2 gap-8">
             <div className="space-y-4">
               <div>

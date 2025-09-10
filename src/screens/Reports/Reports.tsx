@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Navbar } from "../../components/Navbar";
+import { useThemeClasses } from "../../hooks/useThemeClasses";
 
 export const Reports = (): JSX.Element => {
-  const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const [isSaving, setIsSaving] = useState(false);
   const [reportSaved, setReportSaved] = useState(false);
   const [savedReportData, setSavedReportData] = useState<any>(null);
@@ -181,7 +181,10 @@ export const Reports = (): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen bg-green-400/80">
+    <div className={getThemeClasses(
+      "min-h-screen bg-green-400/80",
+      "min-h-screen bg-green-50"
+    )}>
       <Navbar 
         title="Reportes Automáticos" 
        
@@ -189,10 +192,13 @@ export const Reports = (): JSX.Element => {
 
       <div className="container mx-auto p-4">
         <div className="mb-6">
-          <h2 className="text-white text-xl font-semibold">Reportes Automáticos</h2>
+          <h2 className=" text-xl font-semibold">Reportes Automáticos</h2>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-lg">
+        <div className={getThemeClasses(
+          "bg-white rounded-lg p-6 shadow-lg",
+          "bg-white rounded-lg p-6 shadow-lg shadow-green-200/50 border border-green-100"
+        )}>
           {loading ? (
             <div className="h-40 flex items-center justify-center text-gray-600">
               <svg className="animate-spin h-5 w-5 mr-2 text-green-500" viewBox="0 0 24 24">

@@ -4,11 +4,18 @@ import { Input } from "../../../components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { registerUser } from "../../../services/authService";
+import { useThemeClasses } from "../../../hooks/useThemeClasses";
+import { Notification } from "../../../components/ui/notification";
 
 export const Register = (): JSX.Element => {
   const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -70,16 +77,32 @@ export const Register = (): JSX.Element => {
         password: form.password.value,
       });
 
-      alert("Usuario registrado con éxito");
-      navigate("/");
+      setNotification({
+        type: 'success',
+        message: '¡Usuario registrado con éxito!'
+      });
+      
+      // Navegar después de un breve delay para que se vea la notificación
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
     } catch (err: any) {
-      alert(err.response?.data?.message || "Error al registrar");
+      setNotification({
+        type: 'error',
+        message: err.response?.data?.message || "Error al registrar usuario"
+      });
     }
   };
 
   return (
-    <div className="flex h-screen w-full bg-green-400/80">
-      <div className="flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-green-500/80">
+    <div className={getThemeClasses(
+      "flex h-screen w-full bg-green-400/80",
+      "flex h-screen w-full bg-green-50"
+    )}>
+      <div className={getThemeClasses(
+        "flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-green-500/80",
+        "flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-gradient-to-br from-green-600 to-green-700"
+      )}>
         <div className="max-w-md mx-auto w-full">
           <h1 className="text-2xl font-medium text-white mb-6">Crear una cuenta</h1>
 
@@ -191,7 +214,19 @@ export const Register = (): JSX.Element => {
         </div>
       </div>
 
-      <div className="hidden md:block md:w-1/2 bg-green-400/80 relative" />
+      <div className={getThemeClasses(
+        "hidden md:block md:w-1/2 bg-green-400/80 relative",
+        "hidden md:block md:w-1/2 bg-green-100 relative"
+      )} />
+      
+      {/* Notificación */}
+      {notification && (
+        <Notification
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };

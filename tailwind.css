@@ -45,35 +45,36 @@
     --radius: 0.5rem;
   }
 
-  .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
+  .warm {
+    /* Paleta verde de marca profesional */
+    --background: 120 25% 97%; /* Verde de fondo (#f7fbeb) */
+    --foreground: 220 9% 46%; /* Gris oscuro (#4b5563) */
 
-    --muted: 223 47% 11%;
-    --muted-foreground: 215.4 16.3% 56.9%;
+    --muted: 120 20% 95%; /* Verde muy claro (#f9fafb) */
+    --muted-foreground: 220 9% 46%; /* Gris oscuro (#4b5563) */
 
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 120 30% 85%; /* Verde de fondo sección (#c7f0db) */
+    --accent-foreground: 220 9% 46%; /* Gris oscuro (#4b5563) */
 
-    --popover: 224 71% 4%;
-    --popover-foreground: 215 20.2% 65.1%;
+    --popover: 0 0% 100%; /* Blanco (#FFFFFF) */
+    --popover-foreground: 220 9% 46%; /* Gris oscuro (#4b5563) */
 
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
+    --border: 220 13% 91%; /* Gris claro (#e5e7eb) */
+    --input: 220 13% 91%; /* Gris claro (#e5e7eb) */
 
-    --card: transparent;
-    --card-foreground: 213 31% 91%;
+    --card: 0 0% 100%; /* Blanco (#FFFFFF) */
+    --card-foreground: 220 9% 46%; /* Gris oscuro (#4b5563) */
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 1.2%;
+    --primary: 120 45% 35%; /* Verde oscuro (#2c7744) */
+    --primary-foreground: 0 0% 100%; /* Blanco (#FFFFFF) */
 
-    --secondary: 222.2 47.4% 11.2%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 120 35% 50%; /* Verde medio (#4a9355) */
+    --secondary-foreground: 0 0% 100%; /* Blanco (#FFFFFF) */
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%; /* Rojo para errores */
+    --destructive-foreground: 0 0% 100%; /* Blanco (#FFFFFF) */
 
-    --ring: 216 34% 17%;
+    --ring: 120 35% 50%; /* Verde medio (#4a9355) */
 
     --radius: 0.5rem;
   }

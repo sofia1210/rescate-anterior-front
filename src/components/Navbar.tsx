@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ThemeToggle } from "./ui/theme-toggle";
+import { useThemeClasses } from "../hooks/useThemeClasses";
 
 interface NavbarProps {
   title: string;
@@ -10,6 +12,7 @@ interface NavbarProps {
 export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarProps) => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { getThemeClasses } = useThemeClasses();
 
   const navigationItems = [
     {
@@ -26,12 +29,20 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
     }
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  };
+
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
   };
 
   return (
-    <header className="bg-green-500/80 backdrop-blur-sm shadow-lg">
+    <header className={getThemeClasses(
+      "bg-green-500/80 backdrop-blur-sm shadow-lg",
+      "bg-gradient-to-r from-green-700 to-green-600 backdrop-blur-sm shadow-lg shadow-green-200/50"
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Flecha atrás + Logo y título */}
@@ -47,30 +58,58 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
                 </svg>
               </button>
             )}
-            <img 
-              src="/imagenes/Patota.png" 
-              alt="Logo" 
-              className="w-12 h-12 rounded-full shadow-md hover:scale-105 transition-transform duration-200" 
-            />
+            <div className={getThemeClasses(
+              "w-12 h-12 rounded-full shadow-md hover:scale-105 transition-transform duration-200",
+              "w-12 h-12 rounded-full shadow-md hover:scale-105 transition-transform duration-200 bg-white/20 backdrop-blur-sm border-2 border-white/30 hover:bg-white/30"
+            )}>
+              <img 
+                src="/imagenes/Patota.png" 
+                alt="Logo" 
+                className="w-full h-full rounded-full object-cover" 
+              />
+            </div>
             <h1 className="text-white text-xl font-semibold">{title}</h1>
           </div>
 
           {/* Navegación desktop */}
-          <nav className="hidden md:flex items-center gap-6">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
+          <div className="hidden md:flex items-center gap-6">
+            <nav className="flex items-center gap-6">
+              {navigationItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
                 className={`px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
                   isActiveRoute(item.path)
-                    ? "bg-green-600/80 text-white shadow-md"
-                    : "text-white hover:bg-green-600/50 hover:text-gray-100"
+                    ? getThemeClasses(
+                        "bg-green-600/80 text-white shadow-md",
+                        "bg-green-800/80 text-white shadow-md shadow-green-200/50"
+                      )
+                    : getThemeClasses(
+                        "text-white hover:bg-green-600/50 hover:text-gray-100",
+                        "text-white hover:bg-green-700/50 hover:text-gray-100"
+                      )
                 }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            
+            {/* Botón de logout */}
+            <button
+              onClick={handleLogout}
+              className={getThemeClasses(
+                "px-4 py-2 rounded-lg transition-all duration-200 font-medium text-white hover:bg-red-600/50 hover:text-gray-100",
+                "px-4 py-2 rounded-lg transition-all duration-200 font-medium text-white hover:bg-red-600/50 hover:text-gray-100"
+              )}
+            >
+              Cerrar Sesión
+            </button>
+            
+            {/* Botón de cambio de tema */}
+            <ThemeToggle />
+
+          </div>
 
           {/* Botón de menú móvil */}
           <button
@@ -85,6 +124,7 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
               )}
             </svg>
           </button>
+
         </div>
 
         {/* Menú móvil */}
@@ -105,6 +145,25 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
                   {item.label}
                 </Link>
               ))}
+              
+              {/* Botón de logout en móvil */}
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }}
+                className="block px-4 py-3 rounded-lg transition-all duration-200 font-medium text-white hover:bg-red-600/50 hover:text-gray-100"
+              >
+                Cerrar Sesión
+              </button>
+              
+              {/* Botón de cambio de tema en móvil */}
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-medium">Tema</span>
+                  <ThemeToggle />
+                </div>
+              </div>
             </nav>
           </div>
         )}

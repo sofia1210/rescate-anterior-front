@@ -8,9 +8,11 @@ import { AddAnimal } from "../AddAnimal/AddAnimal";
 import { EditRescuer } from "../../Rescatista/EditRescuer/EditRescuer";
 import { usePets } from "../../../services/usePets";
 import { getRescatistasList } from "../../../services/dataService";
+import { useThemeClasses } from "../../../hooks/useThemeClasses";
 
 export const PetsList = (): JSX.Element => {
   const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const [selectedAnimal, setSelectedAnimal] = useState<any | null>(null);
   const [editingAnimal, setEditingAnimal] = useState<any | null>(null);
   const [showAddAnimal, setShowAddAnimal] = useState(false);
@@ -76,7 +78,10 @@ export const PetsList = (): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen bg-green-400/80">
+    <div className={getThemeClasses(
+      "min-h-screen bg-green-400/80",
+      "min-h-screen bg-green-50"
+    )}>
       <Navbar title="Lista de Animales" />
 
       {/* eliminado dropdown "Gestiones" */}
@@ -118,7 +123,10 @@ export const PetsList = (): JSX.Element => {
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
           {filteredPets.map((pet: any) => (
-            <div key={pet.id} className="bg-white rounded-lg p-4 shadow-md h-full flex flex-col">
+            <div key={pet.id} className={getThemeClasses(
+              "bg-white rounded-lg p-4 shadow-md h-full flex flex-col",
+              "bg-white rounded-lg p-4 shadow-md shadow-green-200/50 h-full flex flex-col border border-green-100"
+            )}>
               <div className="flex-grow">
                 <div className="flex justify-center mb-4">
                   <div className="w-40 h-40 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">

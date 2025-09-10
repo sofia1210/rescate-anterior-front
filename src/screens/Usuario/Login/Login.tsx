@@ -4,10 +4,17 @@ import { Input } from "../../../components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { loginUser } from "../../../services/authService";
+import { useThemeClasses } from "../../../hooks/useThemeClasses";
+import { Notification } from "../../../components/ui/notification";
 
 export const Login = (): JSX.Element => {
   const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const [showPassword, setShowPassword] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,16 +47,32 @@ export const Login = (): JSX.Element => {
 
       // Guardar token en localStorage
       localStorage.setItem("token", res.data.token);
-      alert("Sesión iniciada correctamente");
-      navigate("/pets");
+      setNotification({
+        type: 'success',
+        message: '¡Sesión iniciada correctamente!'
+      });
+      
+      // Navegar después de un breve delay para que se vea la notificación
+      setTimeout(() => {
+        navigate("/pets");
+      }, 1500);
     } catch (err: any) {
-      alert(err.response?.data?.message || "Error al iniciar sesión");
+      setNotification({
+        type: 'error',
+        message: err.response?.data?.message || "Error al iniciar sesión"
+      });
     }
   };
 
   return (
-    <div className="flex h-screen w-full bg-green-400/80">
-      <div className="flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-green-500/80">
+    <div className={getThemeClasses(
+      "flex h-screen w-full bg-green-400/80",
+      "flex h-screen w-full bg-green-50"
+    )}>
+      <div className={getThemeClasses(
+        "flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-green-500/80",
+        "flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-gradient-to-br from-green-600 to-green-700"
+      )}>
         <div className="max-w-md mx-auto w-full">
           <div className="flex justify-center mb-8">
             <img src="/imagenes/Patota.png" alt="Logo" className="w-24 h-24" />
@@ -113,7 +136,19 @@ export const Login = (): JSX.Element => {
         </div>
       </div>
 
-      <div className="hidden md:block md:w-1/2 bg-green-400/80 relative" />
+      <div className={getThemeClasses(
+        "hidden md:block md:w-1/2 bg-green-400/80 relative",
+        "hidden md:block md:w-1/2 bg-green-100 relative"
+      )} />
+      
+      {/* Notificación */}
+      {notification && (
+        <Notification
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
     </div>
   );
 };
