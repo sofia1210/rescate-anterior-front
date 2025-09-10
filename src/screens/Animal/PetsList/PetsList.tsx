@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -7,7 +7,7 @@ import { AnimalDetails } from "../AnimalDetails/AnimalDetails";
 import { AddAnimal } from "../AddAnimal/AddAnimal";
 import { EditRescuer } from "../../Rescatista/EditRescuer/EditRescuer";
 import { usePets } from "../../../services/usePets";
-// Nota: cargaremos rescatistas vía fetch directo para evitar caches/304
+import { getRescatistasList } from "../../../services/dataService";
 
 export const PetsList = (): JSX.Element => {
   const navigate = useNavigate();
@@ -21,34 +21,18 @@ export const PetsList = (): JSX.Element => {
   const [rescuerSearch, setRescuerSearch] = useState("");
   const [currentRescuerId, setCurrentRescuerId] = useState<string | number | null>(null);
   const [selectedRescuer, setSelectedRescuer] = useState<any | null>(null);
-  const [showFilter, setShowFilter] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
+  // filtros removidos
+  // const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setShowFilter(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    // filtro removido
   }, []);
 
   useEffect(() => {
     if (!showRescuerPicker) return;
     (async () => {
       try {
-        const base = import.meta.env.VITE_API_URL || "";
-        const url = base ? `${base}/rescatistas` : "/rescatistas";
-        const res = await fetch(url, {
-          cache: "no-store",
-          headers: {
-            "Cache-Control": "no-cache",
-          },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data?.postgres ?? []);
+        const list = await getRescatistasList();
         setRescuers(Array.isArray(list) ? list : []);
       } catch (e) {
         console.error("No se pudieron cargar rescatistas", e);
@@ -85,45 +69,7 @@ export const PetsList = (): JSX.Element => {
     <div className="min-h-screen bg-green-400/80">
       <Navbar title="Lista de Animales" />
 
-      {/* Gestiones Dropdown */}
-      <div className="container mx-auto p-4">
-        <div className="flex justify-end mb-4">
-          <div className="relative" ref={filterRef}>
-            <button 
-              onClick={() => setShowFilter(!showFilter)} 
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
-            >
-              Gestiones
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {showFilter && (
-              <div className="absolute right-0 mt-2 bg-white border rounded shadow-lg z-50 w-40">
-                <button 
-                  className="w-full text-left px-4 py-2 hover:bg-green-100 transition-colors duration-200"
-                  onClick={() => {
-                    navigate("/adopciones");
-                    setShowFilter(false);
-                  }}
-                >
-                  Doméstico
-                </button>
-                <button 
-                  className="w-full text-left px-4 py-2 hover:bg-green-100 transition-colors duration-200"
-                  onClick={() => {
-                    navigate("/liberaciones");
-                    setShowFilter(false);
-                  }}
-                >
-                  Silvestre
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* eliminado dropdown "Gestiones" */}
 
       {/* Search Bar */}
       <div className="container mx-auto p-4">
@@ -160,30 +106,30 @@ export const PetsList = (): JSX.Element => {
 
       {/* Pets Grid */}
       <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredPets.map((pet: any) => (
-            <div key={pet.id} className="bg-white rounded-lg p-4 shadow-md">
-              <div className="flex justify-center mb-4">
-                {pet.image ? (
-                  <img src={pet.image} alt={pet.name} className="w-32 h-32 object-contain" />
-                ) : (
-                  <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-400">No image</span>
-                  </div>
-                )}
+            <div key={pet.id} className="bg-white rounded-lg p-4 shadow-md h-full flex flex-col">
+              <div className="flex-grow">
+                <div className="flex justify-center mb-4">
+                  {pet.image ? (
+                    <img src={pet.image} alt={pet.name} className="w-32 h-32 md:w-40 md:h-40 object-contain" />
+                  ) : (
+                    <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-400">No image</span>
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-center md:text-left">{pet.name}</h3>
+                <p className="text-gray-600"><span className="font-medium">Nombre:</span> {pet.name}</p>
+                <p className="text-gray-600"><span className="font-medium">Especie:</span> {pet.species}</p>
+                <p className="text-gray-600"><span className="font-medium">Tipo:</span> {pet.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}</p>
+                <p className="text-gray-600"><span className="font-medium">Rescatista:</span> {pet.rescuer?.name || '-'}</p>
+                
               </div>
-              <h3 className="text-lg font-semibold mb-2">{pet.name}</h3>
-              <p className="text-gray-600">Nombre: {pet.name}</p>
-              <p className="text-gray-600">Especie: {pet.species}</p>
-              <p className="text-gray-600">Tipo: {pet.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}</p>
-              <p className="text-gray-600">Rescatista: {pet.rescuer?.name}</p>
-              <p className={`text-sm ${pet.veterinarian ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                Veterinario: {pet.veterinarian?.name || 'Sin asignar'}
-              </p>
-              <div className="flex gap-2 mt-3">
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button 
                   variant="outline" 
-                  className="flex-1 bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
+                  className="w-full bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center gap-2"
                   onClick={() => setSelectedAnimal(pet)}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,7 +139,7 @@ export const PetsList = (): JSX.Element => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className={`flex-1 transition-colors duration-200 flex items-center gap-2 ${
+                  className={`w-full transition-colors duration-200 flex items-center justify-center gap-2 ${
                     pet.veterinarian 
                       ? "bg-blue-500 text-white hover:bg-blue-600" 
                       : "bg-green-500 text-white hover:bg-green-600"
@@ -212,7 +158,7 @@ export const PetsList = (): JSX.Element => {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
-                      Asignar Veterinario
+                      Tratamiento
                     </>
                   )}
                 </Button>

@@ -17,12 +17,12 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
       label: "Reportes"
     },
     {
-      path: "/management",
-      label: "Gestiones"
+      path: "/adopciones",
+      label: "Adopciones"
     },
     {
       path: "/pets",
-      label: "Home"
+      label: "Animales"
     }
   ];
 

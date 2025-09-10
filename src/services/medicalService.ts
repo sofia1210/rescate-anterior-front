@@ -23,7 +23,17 @@ export interface TreatmentData {
 
 // Evaluaciones Médicas
 export const createEvaluation = (data: EvaluationData) => {
-  return api.post("/evaluations", data);
+  // Asegurar ISO para fechas
+  const payload = {
+    nombreAnimal: data.nombreAnimal,
+    diagnostico: data.diagnostico,
+    sintomas: data.sintomas || undefined,
+    medicacion: data.medicacion || undefined,
+    responsableNombre: data.responsableNombre,
+    fechaEvaluacion: new Date(data.fechaEvaluacion).toISOString(),
+    proximaRevision: data.proximaRevision ? new Date(data.proximaRevision).toISOString() : undefined,
+  };
+  return api.post("/evaluations", payload);
 };
 
 export const getAllEvaluations = () => {
@@ -36,7 +46,15 @@ export const getEvaluationByAnimal = (animalName: string) => {
 
 // Tratamientos
 export const createTreatment = (data: TreatmentData) => {
-  return api.post("/tratamientos", data);
+  const payload = {
+    nombreAnimal: data.nombreAnimal,
+    tratamiento: data.tratamiento,
+    duracion: data.duracion,
+    observaciones: data.observaciones || undefined,
+    responsableNombre: data.responsableNombre,
+    fechaTratamiento: new Date(data.fechaTratamiento).toISOString(),
+  };
+  return api.post("/tratamientos", payload);
 };
 
 export const getAllTreatments = () => {

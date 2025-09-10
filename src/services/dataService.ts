@@ -16,14 +16,38 @@ export interface Rescatista {
 }
 
 // Listados
-export const getAllRescatistas = () => api.get<Rescatista[]>("/rescatistas");
+export const getAllRescatistas = () => api.get("/rescatistas");
+
+// Conveniencia: devolver siempre array de rescatistas ya desenvuelto
+export const getRescatistasList = async () => {
+  const r = await getAllRescatistas();
+  const data = r?.data as any;
+  return Array.isArray(data) ? data : (data?.postgres ?? []);
+};
 export const getAllAnimales = () => api.get("/animales");
 export const getAllVeterinarios = () => api.get("/veterinarios");
+export const getVeterinariosList = async () => {
+  const r = await getAllVeterinarios();
+  const data = r?.data as any;
+  return Array.isArray(data) ? data : (data?.postgres ?? []);
+};
+export const createVeterinario = (data: { nombre: string; telefono: string; especialidad: string; email: string }) =>
+  api.post("/veterinarios", data);
 export const getAllAdopciones = () => api.get("/adopciones");
 
+// Animales helpers
+export const getAnimalById = async (id: string | number) => {
+  const r = await api.get(`/animales/${id}`);
+  const data = r?.data as any;
+  return Array.isArray(data) ? (data[0] ?? null) : (data?.postgres ?? data);
+};
+
 // CRUD Rescatista
-export const getRescatistaById = (id: string) =>
-  api.get<Rescatista>(`/rescatistas/${id}`).then((r) => r.data);
+export const getRescatistaById = async (id: string) => {
+  const r = await api.get(`/rescatistas/${id}`);
+  const data = r?.data as any;
+  return data?.postgres ?? data;
+};
 
 export const createRescatista = (formData: FormData) =>
   api.post<Rescatista>("/rescatistas", formData, {
@@ -53,4 +77,10 @@ export const updateAnimal = (id: string, formData: FormData) =>
   });
 
 export const deleteAnimal = (id: string) => api.delete(`/animales/${id}`);
+
+// Evaluaciones (para veterinarios/etiquetas auxiliares)
+export const getAllEvaluations = async () => {
+  const r = await api.get("/evaluations");
+  return r.data;
+};
 

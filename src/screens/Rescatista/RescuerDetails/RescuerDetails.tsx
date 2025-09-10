@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Navbar } from "../../../components/Navbar";
+import { getRescatistaById, getRescatistasList } from "../../../services/dataService";
 import { EditRescuer } from "../EditRescuer/EditRescuer";
 
 interface Rescatista {
@@ -23,13 +24,9 @@ export const RescuerDetails = (): JSX.Element => {
   useEffect(() => {
     const fetchRescuer = async () => {
       try {
-        const base = import.meta.env.VITE_API_URL || "";
-        // Intento 1: GET /rescatistas/:id
-        const urlById = base ? `${base}/rescatistas/${id}` : `/rescatistas/${id}`;
-        let r = await fetch(urlById, { cache: "no-store" });
-        if (r.ok) {
-          const raw = await r.json();
-          const resc = raw?.postgres || raw; // soporta { postgres: {...} }
+        // Intento 1: usar service por id
+        try {
+          const resc: any = await getRescatistaById(String(id));
           setRescuerData({
             _id: resc.id || resc._id,
             nombreRescatista: resc.nombre,
@@ -40,14 +37,10 @@ export const RescuerDetails = (): JSX.Element => {
             foto: resc.imagen ? `/imagenes/${resc.imagen}` : "",
           });
           return;
-        }
+        } catch {}
 
-        // Intento 2: GET /rescatistas y buscar en postgres[]
-        const urlAll = base ? `${base}/rescatistas` : `/rescatistas`;
-        r = await fetch(urlAll, { cache: "no-store" });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        const list = Array.isArray(data) ? data : (data?.postgres ?? []);
+        // Intento 2: usar listado desde service
+        const list = await getRescatistasList();
         const found = (list as any[]).find((x) => String(x.id) === String(id));
         if (!found) {
           setRescuerData(null);

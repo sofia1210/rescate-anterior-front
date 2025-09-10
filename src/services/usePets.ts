@@ -1,6 +1,8 @@
 // usePets.ts
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { getAllEvaluations } from "./dataService";
+import { api } from "../lib/api";
 
 /** ===== Tipos ===== */
 export type Pet = {
@@ -130,10 +132,9 @@ export function usePets(endpoint = "/animales") {
       try {
         setLoading(true);
         
-        // Obtener animales
-        const res = await fetch(endpoint, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: ApiResponse = await res.json();
+        // Obtener animales via service client
+        const res = await api.get(endpoint);
+        const data: ApiResponse = res.data as any;
         const list = Array.isArray(data) ? data : data.postgres ?? [];
         
         if (!alive) return;
@@ -143,9 +144,8 @@ export function usePets(endpoint = "/animales") {
         
         // Intentar obtener evaluaciones médicas para verificar veterinarios
         try {
-          const evalRes = await fetch(`${import.meta.env.VITE_API_URL}/evaluations`, { cache: "no-store" });
-          if (evalRes.ok) {
-            const evaluations = await evalRes.json();
+          const evaluations = await getAllEvaluations();
+          if (Array.isArray(evaluations)) {
             
             // Agregar información de veterinario si existe
             mappedPets.forEach(pet => {
