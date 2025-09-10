@@ -41,6 +41,8 @@ export const EditRescuer = ({
   });
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagenFile, setImagenFile] = useState<File | null>(null);
+  const [imagenPreview, setImagenPreview] = useState<string>("");
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -81,6 +83,12 @@ export const EditRescuer = ({
           if (r.latitud && r.longitud) {
             setMarkerPosition({ lat: parseFloat(r.latitud), lng: parseFloat(r.longitud) });
           }
+          // Mostrar preview si existe imagen actual
+          if (r.imagen) {
+            const host = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL).replace(/\/$/, "") : "";
+            const file = String(r.imagen).split("/").pop();
+            setImagenPreview(`${host}/uploads/${file}`);
+          }
         } catch (e) {
           console.error("No se pudo cargar el rescatista:", e);
         }
@@ -98,7 +106,18 @@ export const EditRescuer = ({
       payload.append("nombre", formData.nombreRescatista);
       payload.append("telefono", formData.telefonoContacto);
       payload.append("fechaRescatista", formData.fechaRescate);
-      // No enviar imagen desde el front
+      // Imagen opcional
+      if (imagenFile) {
+        const safeName = `${Date.now()}_${imagenFile.name
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_\.-]/g, "")}`;
+        const renamedFile = new File([imagenFile], safeName, { type: imagenFile.type });
+        // Archivo y pistas para que el backend persista ruta/nombre
+        payload.append("imagen", renamedFile);
+        payload.append("imagenNombre", safeName);
+        payload.append("imagenPath", `/uploads/${safeName}`);
+      }
       payload.append("latitud", formData.latitud);
       payload.append("longitud", formData.longitud);
       payload.append("descripcion", formData.detallesRescate);
@@ -177,6 +196,25 @@ export const EditRescuer = ({
               <div>
                 <label className="block text-sm font-medium mb-1">Ubicación del Rescate:</label>
                 <Input type="text" value={formData.ubicacionRescate} readOnly required />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Foto del rescatista (opcional):</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setImagenFile(file ?? null);
+                    setImagenPreview(file ? URL.createObjectURL(file) : "");
+                  }}
+                  className="w-full"
+                />
+                {imagenPreview && (
+                  <div className="mt-2">
+                    <img src={imagenPreview} alt="Preview" className="h-32 w-32 object-cover rounded" />
+                  </div>
+                )}
               </div>
 
               <LoadScript

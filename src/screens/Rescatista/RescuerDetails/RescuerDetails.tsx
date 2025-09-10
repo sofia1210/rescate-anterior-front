@@ -20,6 +20,16 @@ export const RescuerDetails = (): JSX.Element => {
   const navigate = useNavigate();
   const [showEditRescuer, setShowEditRescuer] = useState(false);
   const [rescuerData, setRescuerData] = useState<Rescatista | null>(null);
+  const resolveImageSrc = (src?: string) => {
+    const fallback = "/imagenes/patita.png";
+    if (!src) return fallback;
+    const clean = String(src).trim();
+    if (/^https?:\/\//i.test(clean)) return clean;
+    if (clean.startsWith("/imagenes/")) return clean;
+    const fileOnly = clean.split("/").pop() || clean;
+    const host = import.meta.env.VITE_BACK;
+    return `${host}/uploads/${fileOnly}`;
+  };
 
   useEffect(() => {
     const fetchRescuer = async () => {
@@ -34,7 +44,7 @@ export const RescuerDetails = (): JSX.Element => {
             fechaRescate: resc.fechaRescatista,
             ubicacionRescate: resc.ubicacionRescate || resc.geolocalizacionId || "",
             detallesRescate: resc.descripcion || "",
-            foto: resc.imagen ? `/imagenes/${resc.imagen}` : "",
+            foto: resc.imagen ? `/uploads/${String(resc.imagen).split("/").pop()}` : "",
           });
           return;
         } catch {}
@@ -53,7 +63,7 @@ export const RescuerDetails = (): JSX.Element => {
           fechaRescate: found.fechaRescatista,
           ubicacionRescate: found.ubicacionRescate || found.geolocalizacionId || "",
           detallesRescate: found.descripcion || "",
-          foto: found.imagen ? `/imagenes/${found.imagen}` : "",
+          foto: found.imagen ? `/uploads/${String(found.imagen).split("/").pop()}` : "",
         });
       } catch (err) {
         console.error("Error al obtener rescatista:", err);
@@ -117,12 +127,12 @@ export const RescuerDetails = (): JSX.Element => {
             </div>
 
             <div className="flex flex-col items-center">
-              <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                {rescuerData.foto ? (
-                  <img src="/imagenes/personita.png" alt="Rescatista" className="w-full h-full object-cover rounded-lg" />
-                ) : (
-                  <img src="/imagenes/personita.png" alt="Rescatista" className="h-full object-cover rounded-lg" />
-                )}
+              <div className="w-56 h-56 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+                <img
+                  src={resolveImageSrc(rescuerData.foto)}
+                  alt="Rescatista"
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>

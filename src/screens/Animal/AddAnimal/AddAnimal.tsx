@@ -101,6 +101,8 @@ export const AddAnimal = ({
     lat: number;
     lng: number;
   } | null>(null);
+  const [imagenFile, setImagenFile] = useState<File | null>(null);
+  const [imagenPreview, setImagenPreview] = useState<string>("");
 
   const handleMapClick = async (event: google.maps.MapMouseEvent) => {
     if (event.latLng) {
@@ -181,7 +183,17 @@ const handleSubmit = async (e: React.FormEvent) => {
         fd.append(key, typeof value === "number" ? String(value) : (value as string));
       }
     });
-    // No enviar imagen desde el front
+    // Imagen opcional
+    if (imagenFile) {
+      const safeName = `${Date.now()}_${imagenFile.name
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_\.-]/g, "")}`;
+      const renamedFile = new File([imagenFile], safeName, { type: imagenFile.type });
+      fd.append("imagen", renamedFile);
+      fd.append("imagenNombre", safeName);
+      fd.append("imagenPath", `/uploads/${safeName}`);
+    }
 
     const response = await fetch(url, {
       method,
@@ -330,7 +342,26 @@ const handleSubmit = async (e: React.FormEvent) => {
               </GoogleMap>
             )}
           </div>
-          <div className="space-y-4" />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Foto del Animal (opcional):</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setImagenFile(file);
+                  setImagenPreview(file ? URL.createObjectURL(file) : "");
+                }}
+                className="w-full"
+              />
+              {imagenPreview && (
+                <div className="mt-2">
+                  <img src={imagenPreview} alt="Preview" className="h-32 w-32 object-cover rounded" />
+                </div>
+              )}
+            </div>
+          </div>
           <div className="md:col-span-2 mt-8 flex justify-center">
             <Button
               type="submit"

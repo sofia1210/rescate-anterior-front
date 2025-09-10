@@ -46,6 +46,16 @@ export const PetsList = (): JSX.Element => {
     import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/animales` : "/animales"
   );
   const [query, setQuery] = useState("");
+  const resolveImageSrc = (filename?: string | null) => {
+    const fallback = "/imagenes/patita.png";
+    if (!filename) return fallback;
+    const clean = String(filename).trim();
+    if (/^https?:\/\//i.test(clean)) return clean;
+    if (clean.startsWith("/imagenes/")) return clean;
+    const fileOnly = clean.split("/").pop() || clean;
+    const host = import.meta.env.VITE_BACK;
+    return `${host}/uploads/${fileOnly}`;
+  };
   const normalize = (s: string) =>
     (s || "")
       .toLowerCase()
@@ -106,18 +116,14 @@ export const PetsList = (): JSX.Element => {
 
       {/* Pets Grid */}
       <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
           {filteredPets.map((pet: any) => (
             <div key={pet.id} className="bg-white rounded-lg p-4 shadow-md h-full flex flex-col">
               <div className="flex-grow">
                 <div className="flex justify-center mb-4">
-                  {pet.image ? (
-                    <img src={pet.image} alt={pet.name} className="w-32 h-32 md:w-40 md:h-40 object-contain" />
-                  ) : (
-                    <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-400">No image</span>
-                    </div>
-                  )}
+                  <div className="w-40 h-40 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+                    <img src={resolveImageSrc(pet.image)} alt={pet.name} className="w-full h-full object-cover" />
+                  </div>
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-center md:text-left">{pet.name}</h3>
                 <p className="text-gray-600"><span className="font-medium">Nombre:</span> {pet.name}</p>

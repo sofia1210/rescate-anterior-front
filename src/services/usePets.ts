@@ -84,8 +84,6 @@ type ApiResponse =
 
 /** ===== Util: mapea un registro Postgres → Pet ===== */
 export function mapPostgresToPet(a: PostgresAnimal): Pet {
-  // Imagen por defecto si viene null: se infiere por especie (muy simple)
-  const fallbackImage = "/imagenes/patita.png";
   const normalize = (s: string | undefined | null) =>
     (s || "")
       .toLowerCase()
@@ -99,7 +97,8 @@ export function mapPostgresToPet(a: PostgresAnimal): Pet {
     name: a.nombre,
     species: a.especie,
     breed: a.raza,
-    image: a.imagen ? `/imagenes/${a.imagen}` : fallbackImage,
+    // Guarda solo el nombre de archivo; el front armará `${API_BASE_URL}/uploads/<nombre>`
+    image: a.imagen ? String(a.imagen).split("/").pop() || String(a.imagen) : null,
     sex: a.sexo,
     age: typeof a.edad === "number" ? `${a.edad} ${a.edad === 1 ? "año" : "años"}` : undefined,
     healthStatus: a.estadoSalud,

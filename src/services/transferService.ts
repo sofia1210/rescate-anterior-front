@@ -38,6 +38,16 @@ export const getTransferByAnimal = (animalName: string) => {
   return api.get(`/transfers?nombreAnimal=${animalName}`);
 };
 
+// Nuevos endpoints según práctica recomendada
+export const getUltimaUbicacion = (animalId: string) => api.get(`/transfers/ultima-ubicacion/${encodeURIComponent(animalId)}`);
+export const getTracking = (animalId: string) => api.get(`/transfers/${encodeURIComponent(animalId)}`);
+export const getGeolocalizacionById = (geoId: string) => api.get(`/geolocalizaciones/${encodeURIComponent(geoId)}`);
+
+// Geolocalizaciones: consulta por animal y creación
+export const getAllGeolocalizaciones = () => api.get(`/geolocalizaciones`);
+export const getGeolocalizacionesByAnimal = (animalId: string) => api.get(`/geolocalizaciones?animalId=${encodeURIComponent(animalId)}`);
+export const createGeolocalizacion = (data: { animalId: string; latitud: number; longitud: number; descripcion?: string; fechaRegistro?: string }) => api.post(`/geolocalizaciones`, data);
+
 // Liberaciones
 export const createLiberation = (data: LiberationData) => {
   return api.post("/liberaciones", data);
