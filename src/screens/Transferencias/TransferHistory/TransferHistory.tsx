@@ -1,5 +1,5 @@
 import { Button } from "../../../components/ui/button";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "../../../components/Navbar";
 import { getAllGeolocalizaciones } from "../../../services/transferService";
@@ -10,6 +10,8 @@ export const TransferHistory = (): JSX.Element => {
   const [geos, setGeos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mapRef = useRef<any>(null);
+  const layersRef = useRef<any>(null);
 
   useEffect(() => {
     let alive = true;
@@ -59,7 +61,57 @@ export const TransferHistory = (): JSX.Element => {
       .filter(Boolean) as { id: string; lat: number; lng: number; descripcion?: string; fecha?: string }[]
   ), [geos]);
 
-  // Eliminado mapa: mantenemos solo la lista
+  // Pintar mapa con Leaflet (global L desde CDN)
+  useEffect(() => {
+    const L: any = (window as any).L;
+    if (!L) return;
+    const container = document.getElementById('history-map');
+    if (!container) return;
+
+    // Crear mapa una sola vez
+    if (!mapRef.current) {
+      mapRef.current = L.map('history-map').setView([-17.7833, -63.1821], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(mapRef.current);
+    }
+
+    // Limpiar capas anteriores
+    if (layersRef.current) {
+      layersRef.current.clearLayers();
+      mapRef.current.removeLayer(layersRef.current);
+    }
+    layersRef.current = L.layerGroup().addTo(mapRef.current);
+
+    if (!points.length) return;
+
+    const latlngs = points.map((p) => [p.lat, p.lng]);
+    // Polyline del recorrido
+    const line = L.polyline(latlngs, { color: '#16a34a', weight: 3 }).addTo(layersRef.current);
+
+    // Markers: puntos intermedios como círculos, último como marker destacado
+    points.forEach((p, idx) => {
+      const isLast = idx === points.length - 1;
+      const when = p.fecha ? new Date(p.fecha).toLocaleString() : '';
+      const popupHtml = `<div><div style="font-weight:600">${p.descripcion || 'Ubicación'}</div><div style="font-size:12px;color:#4b5563">${when}</div><div style="font-size:12px;color:#4b5563">Lat: ${p.lat.toFixed(5)} · Lng: ${p.lng.toFixed(5)}</div></div>`;
+      if (isLast) {
+        const icon = L.icon({
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          iconSize: [30, 50],
+          iconAnchor: [15, 50],
+        });
+        L.marker([p.lat, p.lng], { icon }).addTo(layersRef.current).bindPopup(popupHtml);
+      } else {
+        L.circleMarker([p.lat, p.lng], { radius: 6, color: '#16a34a', fillColor: '#16a34a', fillOpacity: 0.9 }).addTo(layersRef.current).bindPopup(popupHtml);
+      }
+    });
+
+    // Ajustar vista a todos los puntos, o al menos al recorrido
+    try {
+      mapRef.current.fitBounds(line.getBounds(), { padding: [20, 20] });
+    } catch {}
+  }, [points]);
 
   return (
     <div className="min-h-screen bg-green-400/80">
@@ -80,7 +132,8 @@ export const TransferHistory = (): JSX.Element => {
           {!loading && !error && (
             geos.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="h-[360px] rounded overflow-hidden border" id="history-map" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   {points.map((p, i: number) => (
                     <div key={p.id || i} className="p-4 border rounded">
                       <div className="font-semibold mb-1">{p.descripcion || 'Ubicación'}</div>

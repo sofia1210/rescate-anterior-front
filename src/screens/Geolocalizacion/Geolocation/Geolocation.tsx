@@ -212,5 +212,3 @@ export const Geolocation = (): JSX.Element => {
     </div>
   );
 };
-
-// (React-leaflet capture removed; using global Leaflet click handler)

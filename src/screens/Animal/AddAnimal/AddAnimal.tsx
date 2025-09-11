@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+// Leaflet map (using global L from CDN)
 
 interface AddAnimalProps {
   onClose: () => void;
@@ -31,11 +31,7 @@ interface AddAnimalProps {
   } | null;
 }
 
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+declare global { interface Window { L: any } }
 
 type TipoAnimal = "silvestre" | "doméstico" | "";
 
@@ -55,15 +51,9 @@ interface FormData {
   longitud: string;
 }
 
-const mapContainerStyle = {
-  width: "100%",
-  height: "250px",
-};
+const mapContainerStyle = { width: "100%", height: "250px" } as const;
 
-const center = {
-  lat: -17.7833,
-  lng: -63.1821,
-};
+const center = { lat: -17.7833, lng: -63.1821 } as const;
 
 export const AddAnimal = ({
   onClose,
@@ -75,11 +65,9 @@ export const AddAnimal = ({
 }: AddAnimalProps): JSX.Element => {
   const today = new Date().toISOString().split("T")[0];
 
-  const { isLoaded } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || "AIzaSyCl9B-64vdVOiZTBQOIVUEX7RVFW4Wr_BE",
-    libraries: ["places"],
-  });
+  // refs para Leaflet
+  const mapRef = React.useRef<any>(null);
+  const markerRef = React.useRef<any>(null);
 
   const [formData, setFormData] = useState<FormData>({
     nombre: initialAnimal?.name || "",
@@ -97,40 +85,40 @@ export const AddAnimal = ({
     longitud: "",
   });
 
-  const [markerPosition, setMarkerPosition] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
+  const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenPreview, setImagenPreview] = useState<string>("");
 
-  const handleMapClick = async (event: google.maps.MapMouseEvent) => {
-    if (event.latLng) {
-      const lat = event.latLng.lat();
-      const lng = event.latLng.lng();
-      setMarkerPosition({ lat, lng });
-      setFormData((prev) => ({
-        ...prev,
-        latitud: lat.toString(),
-        longitud: lng.toString(),
-      }));
-
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode(
-        { location: { lat, lng } },
-        (
-          results: google.maps.GeocoderResult[] | null,
-          status: google.maps.GeocoderStatus
-        ) => {
-          if (status === "OK" && results && results[0]) {
-            setFormData((prev) => ({
-              ...prev,
-              ubicacionRescate: results[0].formatted_address,
-            }));
-          }
-        }
-      );
+  React.useEffect(() => {
+    const L: any = (window as any).L;
+    const container = document.getElementById('add-animal-map');
+    if (!L || !container) return;
+    if (!mapRef.current) {
+      mapRef.current = L.map('add-animal-map').setView([center.lat, center.lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(mapRef.current);
+      mapRef.current.on('click', handleLeafletClick);
     }
+    if (markerPosition) {
+      if (markerRef.current) {
+        markerRef.current.setLatLng([markerPosition.lat, markerPosition.lng]);
+      } else {
+        markerRef.current = L.marker([markerPosition.lat, markerPosition.lng]).addTo(mapRef.current);
+      }
+    }
+  }, [markerPosition]);
+
+  const handleLeafletClick = async (e: any) => {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    setMarkerPosition({ lat, lng });
+    setFormData((prev) => ({ ...prev, latitud: String(lat), longitud: String(lng) }));
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+      const r = await fetch(url);
+      const j = await r.json();
+      const name = j?.display_name as string | undefined;
+      if (name) setFormData((prev) => ({ ...prev, ubicacionRescate: name }));
+    } catch {}
   };
 
   // ...existing code...
@@ -331,16 +319,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               <span>Latitud: {formData.latitud}</span>
               <span>Longitud: {formData.longitud}</span>
             </div>
-            {isLoaded && (
-              <GoogleMap
-                mapContainerStyle={mapContainerStyle}
-                center={markerPosition || center}
-                zoom={13}
-                onClick={handleMapClick}
-              >
-                {markerPosition && <Marker position={markerPosition} />}
-              </GoogleMap>
-            )}
+            <div id="add-animal-map" style={mapContainerStyle} className="rounded" />
           </div>
           <div className="space-y-4">
             <div>

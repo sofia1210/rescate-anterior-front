@@ -118,10 +118,15 @@ export const EditRescuer = ({
         payload.append("imagenNombre", safeName);
         payload.append("imagenPath", `/uploads/${safeName}`);
       }
-      payload.append("latitud", formData.latitud);
-      payload.append("longitud", formData.longitud);
-      payload.append("descripcion", formData.detallesRescate);
-      payload.append("ubicacionRescate", formData.ubicacionRescate);
+      // Solo enviar geolocalización cuando se edita (no en registro)
+      if (isEditing) {
+        payload.append("latitud", formData.latitud);
+        payload.append("longitud", formData.longitud);
+        payload.append("descripcion", formData.detallesRescate);
+        payload.append("ubicacionRescate", formData.ubicacionRescate);
+      } else {
+        payload.append("descripcion", formData.detallesRescate);
+      }
 
       // EDIT vs CREATE
       if (isEditing && rescatistaId) {
@@ -193,10 +198,12 @@ export const EditRescuer = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Ubicación del Rescate:</label>
-                <Input type="text" value={formData.ubicacionRescate} readOnly required />
-              </div>
+              {isEditing && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ubicación del Rescate:</label>
+                  <Input type="text" value={formData.ubicacionRescate} readOnly required />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium mb-1">Foto del rescatista (opcional):</label>
@@ -217,21 +224,23 @@ export const EditRescuer = ({
                 )}
               </div>
 
-              <LoadScript
-                googleMapsApiKey={(import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || "AIzaSyCl9B-64vdVOiZTBQOIVUEX7RVFW4Wr_BE"}
-                libraries={["places"]}
-              >
-                <GoogleMap
-                  mapContainerStyle={mapContainerStyle}
-                  center={markerPosition || defaultCenter}
-                  zoom={13}
-                  onClick={handleMapClick}
+              {isEditing && (
+                <LoadScript
+                  googleMapsApiKey={(import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || "AIzaSyCl9B-64vdVOiZTBQOIVUEX7RVFW4Wr_BE"}
+                  libraries={["places"]}
                 >
-                  {markerPosition && <Marker position={markerPosition} />}
-                </GoogleMap>
-              </LoadScript>
+                  <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={markerPosition || defaultCenter}
+                    zoom={13}
+                    onClick={handleMapClick}
+                  >
+                    {markerPosition && <Marker position={markerPosition} />}
+                  </GoogleMap>
+                </LoadScript>
+              )}
 
-              {formData.latitud && formData.longitud && (
+              {isEditing && formData.latitud && formData.longitud && (
                 <div className="text-sm mt-2 text-gray-600">
                   <p>
                     <strong>Latitud:</strong> {formData.latitud}
