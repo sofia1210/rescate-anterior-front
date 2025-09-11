@@ -142,7 +142,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
             className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded w-full"
             onClick={() => navigate(`/geolocation/${animal.id}`)}
           >
-            Geolocalización
+            Añadir Ubicación
           </Button>
 
           <Button 
