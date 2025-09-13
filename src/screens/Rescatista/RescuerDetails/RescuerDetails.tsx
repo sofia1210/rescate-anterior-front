@@ -4,6 +4,7 @@ import { Button } from "../../../components/ui/button";
 import { Navbar } from "../../../components/Navbar";
 import { getRescatistaById, getRescatistasList } from "../../../services/dataService";
 import { EditRescuer } from "../EditRescuer/EditRescuer";
+import { useThemeClasses } from "../../../hooks/useThemeClasses";
 
 interface Rescatista {
   _id: string;
@@ -18,6 +19,7 @@ interface Rescatista {
 export const RescuerDetails = (): JSX.Element => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const [showEditRescuer, setShowEditRescuer] = useState(false);
   const [rescuerData, setRescuerData] = useState<Rescatista | null>(null);
   const resolveImageSrc = (src?: string) => {
@@ -84,7 +86,10 @@ export const RescuerDetails = (): JSX.Element => {
   }
 
   return (
-    <div className="min-h-screen bg-green-400/80">
+    <div className={getThemeClasses(
+      "min-h-screen bg-green-400/80",
+      "min-h-screen bg-green-50"
+    )}>
       <Navbar 
         title="Geolocalización y Monitoreo" 
         showBackButton={true} 
@@ -102,7 +107,10 @@ export const RescuerDetails = (): JSX.Element => {
         </div>
 
         {rescuerData ? (
-          <div className="grid md:grid-cols-2 gap-8 bg-white p-6 rounded-lg shadow">
+          <div className={getThemeClasses(
+            "grid md:grid-cols-2 gap-8 bg-white p-6 rounded-lg shadow",
+            "grid md:grid-cols-2 gap-8 bg-white p-6 rounded-lg shadow shadow-green-200/50 border border-green-100"
+          )}>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="text-right font-semibold">Nombre del rescatista:</div>
@@ -137,7 +145,32 @@ export const RescuerDetails = (): JSX.Element => {
             </div>
           </div>
         ) : (
-          <p className="text-red-500">No se encontró el rescatista.</p>
+          <div className={getThemeClasses(
+            "bg-white p-8 rounded-lg shadow text-center",
+            "bg-white p-8 rounded-lg shadow shadow-green-200/50 border border-green-100 text-center"
+          )}>
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className={getThemeClasses(
+                "w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4",
+                "w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4"
+              )}>
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">No se encontró el rescatista</h3>
+              <p className="text-gray-500 mb-4">El rescatista solicitado no existe o ha sido eliminado.</p>
+              <button
+                onClick={() => navigate(-1)}
+                className={getThemeClasses(
+                  "px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200",
+                  "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                )}
+              >
+                Volver Atrás
+              </button>
+            </div>
+          </div>
         )}
 
         <div className="mt-8 flex justify-end hidden">

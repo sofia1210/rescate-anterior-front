@@ -1,5 +1,7 @@
 import { Button } from "../../../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useThemeClasses } from "../../../hooks/useThemeClasses";
+import { useEffect, useRef, useState } from "react";
 
 interface AnimalDetailsProps {
   animal: {
@@ -32,7 +34,10 @@ interface AnimalDetailsProps {
 
 export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): JSX.Element => {
   const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const hasTreatment = false; // cambiar a true si el animal ya tiene tratamiento registrado
+  const mapRef = useRef<any>(null);
+  const [showMap, setShowMap] = useState(false);
   const resolveImageSrc = (filename?: string | null) => {
     const fallback = "/imagenes/patita.png";
     if (!filename) return fallback;
@@ -44,140 +49,434 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
     return `${host}/uploads/${fileOnly}`;
   };
 
+  // Función para inicializar el mapa con ubicaciones
+  useEffect(() => {
+    if (!showMap) return;
+    
+    const L: any = (window as any).L;
+    const container = document.getElementById('animal-location-map');
+    if (!L || !container) return;
+
+    // Coordenadas por defecto (Santa Cruz, Bolivia)
+    const defaultCenter: [number, number] = [-17.7833, -63.1821];
+    
+    if (!mapRef.current) {
+      mapRef.current = L.map('animal-location-map').setView(defaultCenter, 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(mapRef.current);
+    }
+
+    // Limpiar marcadores anteriores
+    mapRef.current.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+        mapRef.current.removeLayer(layer);
+      }
+    });
+
+    // Agregar marcadores para ubicaciones conocidas
+    const locations: Array<{lat: number, lng: number, title: string, color: string}> = [];
+    
+    // Ubicación de rescate (si está disponible)
+    if (animal.rescuer?.rescueLocation) {
+      // Coordenadas aproximadas para Santa Cruz (puedes mejorar esto con geocoding)
+      locations.push({
+        lat: -17.7833 + (Math.random() - 0.5) * 0.1, // Coordenadas aleatorias cerca de Santa Cruz
+        lng: -63.1821 + (Math.random() - 0.5) * 0.1,
+        title: `Rescate: ${animal.rescuer.rescueLocation}`,
+        color: '#ef4444' // Rojo para rescate
+      });
+    }
+
+    // Ubicación de liberación (si está disponible)
+    if (animal.tipo === 'silvestre' && animal.releaseLocation) {
+      locations.push({
+        lat: -17.7833 + (Math.random() - 0.5) * 0.1,
+        lng: -63.1821 + (Math.random() - 0.5) * 0.1,
+        title: `Liberación: ${animal.releaseLocation}`,
+        color: '#22c55e' // Verde para liberación
+      });
+    }
+
+    // Agregar marcadores al mapa
+    locations.forEach(location => {
+      const marker = L.circleMarker([location.lat, location.lng], {
+        radius: 8,
+        color: location.color,
+        fillColor: location.color,
+        fillOpacity: 0.8,
+        weight: 2
+      }).addTo(mapRef.current);
+      
+      marker.bindPopup(`<div class="text-sm"><strong>${location.title}</strong></div>`);
+    });
+
+    // Ajustar vista si hay ubicaciones
+    if (locations.length > 0) {
+      const group = new L.featureGroup(locations.map(loc => L.circleMarker([loc.lat, loc.lng])));
+      mapRef.current.fitBounds(group.getBounds().pad(0.1));
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [showMap, animal.rescuer?.rescueLocation, animal.releaseLocation, animal.tipo]);
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center gap-4 mb-4 sticky top-0 bg-white z-10 pb-3 border-b">
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
-          <h2 className="text-2xl font-semibold">{animal.name}</h2>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div className="text-right font-semibold">Nombre:</div>
-              <div>{animal.name}</div>
-
-              <div className="text-right font-semibold">Tipo:</div>
-              <div>{animal.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}</div>
-
-              <div className="text-right font-semibold">Especie:</div>
-              <div>{animal.species}</div>
-
-              <div className="text-right font-semibold">Raza:</div>
-              <div>{animal.breed}</div>
-
-              <div className="text-right font-semibold">Sexo:</div>
-              <div>{animal.sex}</div>
-
-              <div className="text-right font-semibold">Edad:</div>
-              <div>{animal.age}</div>
-
-              <div className="text-right font-semibold">Estado de Salud:</div>
-              <div>{animal.healthStatus}</div>
-
-              <div className="text-right font-semibold">Fecha de Ingreso:</div>
-              <div>{animal.admissionDate}</div>
-
-              <div className="text-right font-semibold">Tipo de alimentación:</div>
-              <div>{animal.feedingType}</div>
-
-              <div className="text-right font-semibold">Cantidad recomendada:</div>
-              <div>{animal.recommendedAmount}</div>
-
-              <div className="text-right font-semibold">Frecuencia recomendada:</div>
-              <div>{animal.recommendedFrequency}</div>
-
-              <div className="text-right font-semibold">
-                {animal.tipo === 'domestico' ? 'Fecha de Adopción:' : 'Fecha de Liberación:'}
-              </div>
-              <div>{animal.releaseDate}</div>
-
-              {animal.tipo === 'silvestre' && (
-                <>
-                  <div className="text-right font-semibold">Ubicación de Liberación:</div>
-                  <div>{animal.releaseLocation}</div>
-                </>
-              )}
-
-              {animal.rescuer && (
-                <>
-                  <div className="text-right font-semibold">Rescatista:</div>
-                  <div>{animal.rescuer.name}</div>
-
-                  <div className="text-right font-semibold">Teléfono del Rescatista:</div>
-                  <div>{animal.rescuer.phone}</div>
-
-                  <div className="text-right font-semibold">Fecha de Rescate:</div>
-                  <div>{animal.rescuer.rescueDate}</div>
-
-                  <div className="text-right font-semibold">Ubicación de Rescate:</div>
-                  <div>{animal.rescuer.rescueLocation}</div>
-                </>
-              )}
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+      <div className={getThemeClasses(
+        "bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl",
+        "bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-green-200"
+      )}>
+        <div className={getThemeClasses(
+          "flex items-center justify-between mb-6 sticky top-0 bg-white z-10 pb-4 border-b border-gray-200",
+          "flex items-center justify-between mb-6 sticky top-0 bg-white z-10 pb-4 border-b border-green-200"
+        )}>
+          <div className="flex items-center gap-4">
+            <button onClick={onClose} className={getThemeClasses(
+              "text-gray-500 hover:text-gray-700 transition-colors duration-200",
+              "text-gray-500 hover:text-gray-700 transition-colors duration-200"
+            )}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800">{animal.name}</h2>
+              <p className="text-sm text-gray-500">{animal.tipo === 'domestico' ? 'Animal Doméstico' : 'Animal Silvestre'}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <div className={getThemeClasses(
+              "w-3 h-3 rounded-full",
+              "w-3 h-3 rounded-full"
+            )} style={{backgroundColor: animal.tipo === 'domestico' ? '#3b82f6' : '#10b981'}}></div>
+            <span className="text-sm text-gray-600">{animal.species}</span>
+          </div>
+        </div>
 
-          <div className="flex flex-col items-center">
-            <div className="w-72 h-72 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            {/* Información Básica */}
+            <div className={getThemeClasses(
+              "bg-gray-50 p-4 rounded-lg",
+              "bg-green-50/50 p-4 rounded-lg border border-green-100"
+            )}>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Información Básica
+              </h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <div className="text-right font-semibold text-gray-600">Especie:</div>
+                <div className="text-gray-800">{animal.species}</div>
+
+                <div className="text-right font-semibold text-gray-600">Raza:</div>
+                <div className="text-gray-800">{animal.breed}</div>
+
+                <div className="text-right font-semibold text-gray-600">Sexo:</div>
+                <div className="text-gray-800">{animal.sex}</div>
+
+                <div className="text-right font-semibold text-gray-600">Edad:</div>
+                <div className="text-gray-800">{animal.age}</div>
+
+                <div className="text-right font-semibold text-gray-600">Estado de Salud:</div>
+                <div className="text-gray-800">{animal.healthStatus}</div>
+
+                <div className="text-right font-semibold text-gray-600">Fecha de Ingreso:</div>
+                <div className="text-gray-800">{animal.admissionDate}</div>
+              </div>
+            </div>
+
+            {/* Información de Alimentación */}
+            <div className={getThemeClasses(
+              "bg-gray-50 p-4 rounded-lg",
+              "bg-green-50/50 p-4 rounded-lg border border-green-100"
+            )}>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                </svg>
+                Alimentación
+              </h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <div className="text-right font-semibold text-gray-600">Tipo:</div>
+                <div className="text-gray-800">{animal.feedingType}</div>
+
+                <div className="text-right font-semibold text-gray-600">Cantidad:</div>
+                <div className="text-gray-800">{animal.recommendedAmount}</div>
+
+                <div className="text-right font-semibold text-gray-600">Frecuencia:</div>
+                <div className="text-gray-800">{animal.recommendedFrequency}</div>
+              </div>
+            </div>
+
+            {/* Información del Rescatista */}
+            {animal.rescuer && (
+              <div className={getThemeClasses(
+                "bg-gray-50 p-4 rounded-lg",
+                "bg-green-50/50 p-4 rounded-lg border border-green-100"
+              )}>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Rescatista
+                </h3>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div className="text-right font-semibold text-gray-600">Nombre:</div>
+                  <div className="text-gray-800">{animal.rescuer.name}</div>
+
+                  <div className="text-right font-semibold text-gray-600">Teléfono:</div>
+                  <div className="text-gray-800">{animal.rescuer.phone}</div>
+
+                  <div className="text-right font-semibold text-gray-600">Fecha de Rescate:</div>
+                  <div className="text-gray-800">{animal.rescuer.rescueDate}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center space-y-6">
+            {/* Imagen del Animal */}
+            <div className={getThemeClasses(
+              "w-80 h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center shadow-lg",
+              "w-80 h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-green-200/50 border border-green-100"
+            )}>
               <img src={resolveImageSrc(animal.image)} alt={animal.name} className="w-full h-full object-cover" />
             </div>
+
+            {/* Estado del Animal */}
+            <div className={getThemeClasses(
+              "bg-gray-50 p-4 rounded-lg w-full",
+              "bg-green-50/50 p-4 rounded-lg border border-green-100 w-full"
+            )}>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Estado Actual
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-600">Tipo:</span>
+                  <span className={getThemeClasses(
+                    "px-3 py-1 rounded-full text-xs font-medium",
+                    "px-3 py-1 rounded-full text-xs font-medium"
+                  )} style={{backgroundColor: animal.tipo === 'domestico' ? '#dbeafe' : '#d1fae5', color: animal.tipo === 'domestico' ? '#1e40af' : '#065f46'}}>
+                    {animal.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-600">Estado:</span>
+                  <span className="text-sm text-gray-800">{animal.healthStatus}</span>
+                </div>
+
+                {animal.tipo === 'domestico' && animal.releaseDate && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600">Fecha de Adopción:</span>
+                    <span className="text-sm text-gray-800">{animal.releaseDate}</span>
+                  </div>
+                )}
+
+                {animal.tipo === 'silvestre' && animal.releaseDate && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600">Fecha de Liberación:</span>
+                    <span className="text-sm text-gray-800">{animal.releaseDate}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Botones para otras acciones */}
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          <Button 
-            className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded w-full"
-            onClick={() => navigate(`/medical-evaluation/${animal.id}`)}
-          >
-            Evaluaciones Médicas
-          </Button>
+        {/* Sección de Ubicaciones */}
+        {(animal.rescuer?.rescueLocation || (animal.tipo === 'silvestre' && animal.releaseLocation)) && (
+          <div className="mt-8">
+            <div className={getThemeClasses(
+              "bg-gray-50 p-6 rounded-lg",
+              "bg-green-50/50 p-6 rounded-lg border border-green-100"
+            )}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Ubicaciones Importantes
+                </h3>
+                <button
+                  onClick={() => setShowMap(!showMap)}
+                  className={getThemeClasses(
+                    "px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center gap-2",
+                    "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+                  )}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  {showMap ? 'Ocultar Mapa' : 'Ver Mapa'}
+                </button>
+              </div>
 
-          <Button 
-            className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded w-full"
-            onClick={() => navigate(`/geolocation/${animal.id}`)}
-          >
-            Añadir Ubicación
-          </Button>
+              {/* Información de ubicaciones */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {animal.rescuer?.rescueLocation && (
+                  <div className={getThemeClasses(
+                    "p-4 border rounded-lg bg-white",
+                    "p-4 border border-green-200 rounded-lg bg-white shadow-sm"
+                  )}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                      <span className="font-semibold text-gray-800">Ubicación de Rescate</span>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed">{animal.rescuer.rescueLocation}</p>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Rescatado por: {animal.rescuer.name}
+                    </div>
+                  </div>
+                )}
 
-          <Button 
-            className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded w-full"
-            onClick={() => navigate(`/transfer-history/${animal.id}`)}
-          >
-            Historial de Traslados
-          </Button>
-        </div>
+                {animal.tipo === 'silvestre' && animal.releaseLocation && (
+                  <div className={getThemeClasses(
+                    "p-4 border rounded-lg bg-white",
+                    "p-4 border border-green-200 rounded-lg bg-white shadow-sm"
+                  )}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                      <span className="font-semibold text-gray-800">Ubicación de Liberación</span>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed">{animal.releaseLocation}</p>
+                    {animal.releaseDate && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        Liberado el: {animal.releaseDate}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-        {/* Botones para tratamiento médico con lógica condicional */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-          {hasTreatment && (
+              {/* Mapa */}
+              {showMap && (
+                <div className="mt-6">
+                  <div 
+                    id="animal-location-map" 
+                    className={getThemeClasses(
+                      "w-full h-80 rounded-lg border border-gray-200",
+                      "w-full h-80 rounded-lg border border-green-200"
+                    )}
+                    style={{ minHeight: '320px' }}
+                  ></div>
+                  <div className="mt-3 text-sm text-gray-500">
+                    <div className="flex items-center justify-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span>Ubicación de Rescate</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span>Ubicación de Liberación</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Botones de Acción */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Acciones Disponibles
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Evaluaciones Médicas */}
+            <Button 
+              className={getThemeClasses(
+                "bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4",
+                "bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4"
+              )}
+              onClick={() => navigate(`/medical-evaluation/${animal.id}`)}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Evaluaciones Médicas
+            </Button>
+
+            {/* Geolocalización */}
+            <Button 
+              className={getThemeClasses(
+                "bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4",
+                "bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4"
+              )}
+              onClick={() => navigate(`/geolocation/${animal.id}`)}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Añadir Ubicación
+            </Button>
+
+            {/* Historial de Traslados */}
+            <Button 
+              className={getThemeClasses(
+                "bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4",
+                "bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4"
+              )}
+              onClick={() => navigate(`/transfer-history/${animal.id}`)}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Historial de Traslados
+            </Button>
+
+            {/* Tratamiento Médico */}
             <Button 
               onClick={() => navigate(`/medical-treatment/${animal.id}`)}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded w-full"
+              className={getThemeClasses(
+                "bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4",
+                "bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4"
+              )}
             >
-              Ver Tratamiento Médico
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              {hasTreatment ? 'Ver Tratamiento' : 'Tratamiento Médico'}
             </Button>
-          )}
-        <Button
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded w-full"
-          onClick={() => navigate(`/RescuerDetails/${animal.rescuer?.id}`)} // o lo que uses
-        >
-          Ver Rescatista
-        </Button>
 
-          {!hasTreatment && (
-            <Button 
-            onClick={() => navigate(`/medical-treatment/${animal.id}`)}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded w-full"
-            >
-              Tratamiento Médico
-            </Button>
-          )}
+            {/* Ver Rescatista */}
+            {animal.rescuer && (
+              <Button
+                className={getThemeClasses(
+                  "bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4",
+                  "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4"
+                )}
+                onClick={() => navigate(`/RescuerDetails/${animal.rescuer?.id}`)}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Ver Rescatista
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Botón editar */}

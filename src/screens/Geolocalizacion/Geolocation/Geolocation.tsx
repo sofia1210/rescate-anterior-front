@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Navbar } from "../../../components/Navbar";
 import { createGeolocalizacion } from "../../../services/transferService";
+import { useThemeClasses } from "../../../hooks/useThemeClasses";
 // Leaflet via global L from CDN
 
 declare global {
@@ -12,6 +13,7 @@ declare global {
 export const Geolocation = (): JSX.Element => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { getThemeClasses } = useThemeClasses();
   const [newPos, setNewPos] = useState<{ lat: number; lng: number; descripcion?: string } | null>(null);
 
   const mapRef = useRef<any>(null);
@@ -115,7 +117,10 @@ export const Geolocation = (): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen bg-green-400/80">
+    <div className={getThemeClasses(
+      "min-h-screen bg-green-400/80",
+      "min-h-screen bg-green-50"
+    )}>
       <Navbar 
         title="Geolocalización y Monitoreo" 
         showBackButton={true} 
@@ -127,7 +132,10 @@ export const Geolocation = (): JSX.Element => {
           <h2 className="text-white text-xl font-semibold">Ubicación del Animal</h2>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className={getThemeClasses(
+          "bg-white p-6 rounded-lg shadow-md",
+          "bg-white p-6 rounded-lg shadow-md shadow-green-200/50 border border-green-100"
+        )}>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold">Seleccionar ubicación de traslado</h3>
             <button
@@ -150,7 +158,10 @@ export const Geolocation = (): JSX.Element => {
             <label className="block text-sm font-medium mb-1">Descripción de la ubicación</label>
             <input
               type="text"
-              className="w-full border rounded px-3 py-2"
+              className={getThemeClasses(
+                "w-full border rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                "w-full border border-green-200 rounded px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-green-50/50"
+              )}
               placeholder="Dirección o referencia"
               value={newPos?.descripcion || ""}
               onChange={(e) => setNewPos((prev) => prev ? { ...prev, descripcion: e.target.value } : { lat: -17.7833, lng: -63.1821, descripcion: e.target.value })}

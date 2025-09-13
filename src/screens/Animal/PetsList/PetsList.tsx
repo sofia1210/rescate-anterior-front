@@ -121,8 +121,9 @@ export const PetsList = (): JSX.Element => {
 
       {/* Pets Grid */}
       <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
-          {filteredPets.map((pet: any) => (
+        {filteredPets.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+            {filteredPets.map((pet: any) => (
             <div key={pet.id} className={getThemeClasses(
               "bg-white rounded-lg p-4 shadow-md h-full flex flex-col",
               "bg-white rounded-lg p-4 shadow-md shadow-green-200/50 h-full flex flex-col border border-green-100"
@@ -178,8 +179,52 @@ export const PetsList = (): JSX.Element => {
                 </Button>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className={getThemeClasses(
+            "flex flex-col items-center justify-center py-16 px-4",
+            "flex flex-col items-center justify-center py-16 px-4"
+          )}>
+            <div className={getThemeClasses(
+              "w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6",
+              "w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6"
+            )}>
+              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <h3 className={getThemeClasses(
+              "text-xl font-semibold text-gray-600 mb-2",
+              "text-xl font-semibold text-gray-700 mb-2"
+            )}>
+              {query ? `No se encontraron animales para "${query}"` : "No hay animales registrados"}
+            </h3>
+            <p className={getThemeClasses(
+              "text-gray-500 text-center max-w-md mb-4",
+              "text-gray-600 text-center max-w-md mb-4"
+            )}>
+              {query 
+                ? "Intenta con otros términos de búsqueda o revisa la ortografía."
+                : "Aún no se han registrado animales en el sistema. ¡Agrega el primero!"
+              }
+            </p>
+            {!query && (
+              <button
+                onClick={() => setShowRescuerPicker(true)}
+                className={getThemeClasses(
+                  "px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-medium",
+                  "px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium"
+                )}
+              >
+                <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Registrar Primer Animal
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Botón Flotante para Añadir Animal (selector de rescatista) */}
@@ -253,8 +298,11 @@ export const PetsList = (): JSX.Element => {
       )}
 
       {showRescuerPicker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+          <div className={getThemeClasses(
+            "bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl",
+            "bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-green-200"
+          )}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold">Seleccionar Rescatista</h3>
               <button className="text-gray-500" onClick={() => setShowRescuerPicker(false)} aria-label="Cerrar">✕</button>
