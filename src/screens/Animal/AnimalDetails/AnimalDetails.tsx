@@ -1,7 +1,10 @@
 import { Button } from "../../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useThemeClasses } from "../../../hooks/useThemeClasses";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getAnimalById } from "../../../services/dataService";
+import { getAllLiberations } from "../../../services/transferService";
+import { getAllAdopciones, getAllAdoptions } from "../../../services/dataService";
 
 interface AnimalDetailsProps {
   animal: {
@@ -38,6 +41,10 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
   const hasTreatment = false; // cambiar a true si el animal ya tiene tratamiento registrado
   const mapRef = useRef<any>(null);
   const [showMap, setShowMap] = useState(false);
+  const [liberations, setLiberations] = useState<any[]>([]);
+  const [adoptions, setAdoptions] = useState<any[]>([]);
+  const [rescuePoint, setRescuePoint] = useState<{ lat: number; lng: number; desc?: string } | null>(null);
+  const [showRescuerModal, setShowRescuerModal] = useState(false);
   const resolveImageSrc = (filename?: string | null) => {
     const fallback = "/imagenes/patita.png";
     if (!filename) return fallback;
@@ -48,6 +55,88 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
     const fileOnly = clean.split("/").pop() || clean;
     return `${host}/uploads/${fileOnly}`;
   };
+
+  const formatDateDMY = (value?: string): string => {
+    if (!value) return "-";
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
+  // Carga liberaciones/adopciones por nombre del animal
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const nombre = String(animal?.name || "").trim();
+        if (!nombre) return;
+        // Liberaciones
+        try {
+          const lr = await getAllLiberations();
+          const ld = lr?.data; const ll = Array.isArray(ld) ? ld : (ld?.postgres ?? []);
+          if (alive) setLiberations(ll.filter((x: any) => {
+            const n = String(x?.nombreAnimal || x?.animal?.nombre || x?.animal?.name || "").trim();
+            return n === nombre;
+          }));
+        } catch { if (alive) setLiberations([]); }
+        // Adopciones (/adoptions preferido, fallback /adopciones)
+        try {
+          let ar: any; try { ar = await getAllAdoptions(); } catch { ar = await getAllAdopciones(); }
+          const ad = ar?.data; const al = Array.isArray(ad) ? ad : (ad?.postgres ?? []);
+          if (alive) setAdoptions(al.filter((x: any) => {
+            const n = String(x?.nombreAnimal || x?.animal?.nombre || x?.animal?.name || "").trim();
+            return n === nombre;
+          }));
+        } catch { if (alive) setAdoptions([]); }
+      } catch { /* noop */ }
+    })();
+    return () => { alive = false; };
+  }, [animal?.name]);
+
+  // Fechas calculadas desde endpoints
+  const toDate = (v?: any): Date | null => {
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const latestLiberationDateStr = useMemo(() => {
+    const ordered = (liberations || [])
+      .map((x: any) => toDate(x?.fechaLiberacion || x?.fecha || x?.createdAt))
+      .filter((d: any) => d instanceof Date) as Date[];
+    if (!ordered.length) return "";
+    ordered.sort((a, b) => a.getTime() - b.getTime());
+    return ordered[ordered.length - 1].toLocaleString();
+  }, [liberations]);
+
+  const latestAdoptionDateStr = useMemo(() => {
+    const approved = (adoptions || []).filter((x: any) => String(x?.estado || '').toLowerCase() === 'aprobada');
+    const ordered = approved
+      .map((x: any) => toDate(x?.fechaAdopcion || x?.fecha || x?.createdAt))
+      .filter((d: any) => d instanceof Date) as Date[];
+    if (!ordered.length) return "";
+    ordered.sort((a, b) => a.getTime() - b.getTime());
+    return ordered[ordered.length - 1].toLocaleString();
+  }, [adoptions]);
+
+  // Carga coordenadas reales de rescate del animal (lat/lng)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const full = await getAnimalById(String(animal.id));
+        const lat = Number(full?.latitud ?? full?.geolocalizacion?.latitud);
+        const lng = Number(full?.longitud ?? full?.geolocalizacion?.longitud);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          if (!alive) return;
+          setRescuePoint({ lat, lng, desc: full?.ubicacionRescate ?? full?.geolocalizacion?.descripcion });
+        }
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [animal.id]);
 
   // Función para inicializar el mapa con ubicaciones
   useEffect(() => {
@@ -77,26 +166,31 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
     // Agregar marcadores para ubicaciones conocidas
     const locations: Array<{lat: number, lng: number, title: string, color: string}> = [];
     
-    // Ubicación de rescate (si está disponible)
-    if (animal.rescuer?.rescueLocation) {
-      // Coordenadas aproximadas para Santa Cruz (puedes mejorar esto con geocoding)
+    // Ubicación de rescate real (si hay lat/lng)
+    if (rescuePoint) {
       locations.push({
-        lat: -17.7833 + (Math.random() - 0.5) * 0.1, // Coordenadas aleatorias cerca de Santa Cruz
-        lng: -63.1821 + (Math.random() - 0.5) * 0.1,
-        title: `Rescate: ${animal.rescuer.rescueLocation}`,
-        color: '#ef4444' // Rojo para rescate
+        lat: rescuePoint.lat,
+        lng: rescuePoint.lng,
+        title: `Rescate: ${rescuePoint.desc || ''}`,
+        color: '#ef4444'
       });
     }
 
-    // Ubicación de liberación (si está disponible)
-    if (animal.tipo === 'silvestre' && animal.releaseLocation) {
-      locations.push({
-        lat: -17.7833 + (Math.random() - 0.5) * 0.1,
-        lng: -63.1821 + (Math.random() - 0.5) * 0.1,
-        title: `Liberación: ${animal.releaseLocation}`,
-        color: '#22c55e' // Verde para liberación
-      });
-    }
+    // Liberaciones reales (si existen)
+    (liberations || []).forEach((x: any) => {
+      const lat = Number(x?.latitud); const lng = Number(x?.longitud);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        locations.push({ lat, lng, title: `Liberación: ${x?.descripcion || ''}`, color: '#22c55e' });
+      }
+    });
+
+    // Adopciones reales (si existen)
+    (adoptions || []).forEach((x: any) => {
+      const lat = Number(x?.latitud); const lng = Number(x?.longitud);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        locations.push({ lat, lng, title: `Adopción: ${x?.descripcion || ''}`, color: '#3b82f6' });
+      }
+    });
 
     // Agregar marcadores al mapa
     locations.forEach(location => {
@@ -123,13 +217,13 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
         mapRef.current = null;
       }
     };
-  }, [showMap, animal.rescuer?.rescueLocation, animal.releaseLocation, animal.tipo]);
+  }, [showMap, animal.rescuer?.rescueLocation, animal.releaseLocation, animal.tipo, liberations, adoptions, rescuePoint]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] px-4 pb-4 backdrop-blur-sm">
       <div className={getThemeClasses(
-        "bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl",
-        "bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-green-200"
+        "bg-white rounded-lg p-6 pt-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative",
+        "bg-white rounded-lg p-6 pt-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-green-200 relative"
       )}>
         <div className={getThemeClasses(
           "flex items-center justify-between mb-6 sticky top-0 bg-white z-10 pb-4 border-b border-gray-200",
@@ -181,14 +275,14 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                 <div className="text-right font-semibold text-gray-600">Sexo:</div>
                 <div className="text-gray-800">{animal.sex}</div>
 
-                <div className="text-right font-semibold text-gray-600">Edad:</div>
-                <div className="text-gray-800">{animal.age}</div>
+                <div className="text-right font-semibold text-gray-600 hidden">Edad:</div>
+                <div className="text-gray-800 hidden">{animal.age}</div>
 
                 <div className="text-right font-semibold text-gray-600">Estado de Salud:</div>
                 <div className="text-gray-800">{animal.healthStatus}</div>
 
                 <div className="text-right font-semibold text-gray-600">Fecha de Ingreso:</div>
-                <div className="text-gray-800">{animal.admissionDate}</div>
+                <div className="text-gray-800">{formatDateDMY(animal.admissionDate)}</div>
               </div>
             </div>
 
@@ -234,8 +328,6 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   <div className="text-right font-semibold text-gray-600">Teléfono:</div>
                   <div className="text-gray-800">{animal.rescuer.phone}</div>
 
-                  <div className="text-right font-semibold text-gray-600">Fecha de Rescate:</div>
-                  <div className="text-gray-800">{animal.rescuer.rescueDate}</div>
                 </div>
               </div>
             )}
@@ -277,17 +369,17 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   <span className="text-sm text-gray-800">{animal.healthStatus}</span>
                 </div>
 
-                {animal.tipo === 'domestico' && animal.releaseDate && (
+                {animal.tipo === 'domestico' && (latestAdoptionDateStr || animal.releaseDate) && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-600">Fecha de Adopción:</span>
-                    <span className="text-sm text-gray-800">{animal.releaseDate}</span>
+                    <span className="text-sm text-gray-800">{latestAdoptionDateStr || animal.releaseDate}</span>
                   </div>
                 )}
 
-                {animal.tipo === 'silvestre' && animal.releaseDate && (
+                {animal.tipo === 'silvestre' && (latestLiberationDateStr || animal.releaseDate) && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-600">Fecha de Liberación:</span>
-                    <span className="text-sm text-gray-800">{animal.releaseDate}</span>
+                    <span className="text-sm text-gray-800">{latestLiberationDateStr || animal.releaseDate}</span>
                   </div>
                 )}
               </div>
@@ -296,7 +388,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
         </div>
 
         {/* Sección de Ubicaciones */}
-        {(animal.rescuer?.rescueLocation || (animal.tipo === 'silvestre' && animal.releaseLocation)) && (
+        {(animal.rescuer?.rescueLocation || (liberations && liberations.length > 0) || (adoptions && adoptions.length > 0)) && (
           <div className="mt-8">
             <div className={getThemeClasses(
               "bg-gray-50 p-6 rounded-lg",
@@ -308,7 +400,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Ubicaciones Importantes
+                  Ubicación Importante
                 </h3>
                 <button
                   onClick={() => setShowMap(!showMap)}
@@ -344,10 +436,10 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   </div>
                 )}
 
-                {animal.tipo === 'silvestre' && animal.releaseLocation && (
+                {liberations && liberations.length > 0 && (
                   <div className={getThemeClasses(
                     "p-4 border rounded-lg bg-white",
-                    "p-4 border border-green-200 rounded-lg bg-white shadow-sm"
+                    "p-4 border border-green-200 rounded-lg bg-white shadow-sm hidden"
                   )}>
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
@@ -355,10 +447,30 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                       </div>
                       <span className="font-semibold text-gray-800">Ubicación de Liberación</span>
                     </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{animal.releaseLocation}</p>
-                    {animal.releaseDate && (
+                    <p className="text-gray-600 text-sm leading-relaxed">{liberations[0]?.descripcion || 'Liberación registrada'}</p>
+                    {liberations[0]?.fechaLiberacion && (
                       <div className="mt-2 text-xs text-gray-500">
-                        Liberado el: {animal.releaseDate}
+                        Liberado el: {new Date(liberations[0]?.fechaLiberacion).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {adoptions && adoptions.length > 0 && (
+                  <div className={getThemeClasses(
+                    "p-4 border rounded-lg bg-white",
+                    "p-4 border border-green-200 rounded-lg bg-white shadow-sm hidden"
+                  )}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                      <span className="font-semibold text-gray-800">Ubicación de Adopción</span>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed">{adoptions[0]?.descripcion || 'Adopción registrada'}</p>
+                    {adoptions[0]?.fechaAdopcion && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        Adoptado el: {new Date(adoptions[0]?.fechaAdopcion).toLocaleString()}
                       </div>
                     )}
                   </div>
@@ -371,8 +483,8 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   <div 
                     id="animal-location-map" 
                     className={getThemeClasses(
-                      "w-full h-80 rounded-lg border border-gray-200",
-                      "w-full h-80 rounded-lg border border-green-200"
+                      "w-full h-80 rounded-lg border border-gray-200 relative z-0",
+                      "w-full h-80 rounded-lg border border-green-200 relative z-0"
                     )}
                     style={{ minHeight: '320px' }}
                   ></div>
@@ -382,7 +494,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                         <span>Ubicación de Rescate</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 hidden">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                         <span>Ubicación de Liberación</span>
                       </div>
@@ -400,7 +512,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            Acciones Disponibles
+            Administración
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -468,7 +580,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   "bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4",
                   "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg w-full flex items-center gap-2 p-4"
                 )}
-                onClick={() => navigate(`/RescuerDetails/${animal.rescuer?.id}`)}
+                onClick={() => setShowRescuerModal(true)}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -486,6 +598,23 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
           </Button>
         </div>
       </div>
+      {showRescuerModal && animal.rescuer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] p-4">
+          <div className={getThemeClasses(
+            "bg-white rounded-lg w-full max-w-md p-6 shadow-2xl",
+            "bg-white rounded-lg w-full max-w-md p-6 shadow-2xl border border-green-200"
+          )}>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-800">Información del Rescatista</h4>
+              <button onClick={() => setShowRescuerModal(false)} className="text-gray-500 hover:text-gray-700" aria-label="Cerrar">✕</button>
+            </div>
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="flex"><span className="w-40 font-medium">Nombre:</span><span>{animal.rescuer.name || '-'}</span></div>
+              <div className="flex"><span className="w-40 font-medium">Teléfono:</span><span>{animal.rescuer.phone || '-'}</span></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -44,10 +44,17 @@ export const PetsList = (): JSX.Element => {
   }, [showRescuerPicker]);
 
   // antes: const pets = [ ...hardcoded... ];
-  const { pets } = usePets(
+  const { pets, error } = usePets(
     import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/animales` : "/animales"
   );
+  const [minWaitDone, setMinWaitDone] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinWaitDone(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
   const [query, setQuery] = useState("");
+  const [typeChoice, setTypeChoice] = useState<string>("todos"); // todos|domestico|silvestre
+  const [healthChoice, setHealthChoice] = useState<string>("todos"); // todos|muy bueno|bueno|estable|sano
   const resolveImageSrc = (filename?: string | null) => {
     const fallback = "/imagenes/patita.png";
     if (!filename) return fallback;
@@ -64,12 +71,23 @@ export const PetsList = (): JSX.Element => {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
-  // ⬇️ Filtrado por nombre (pet.name)
+  // ⬇️ Filtrado por nombre + tipo + estado
   const filteredPets = useMemo(() => {
-    if (!query.trim()) return pets;
     const q = normalize(query.trim());
-    return pets.filter((p: any) => normalize(p?.name).includes(q));
-  }, [pets, query]);
+    return (pets || [])
+      .filter((p: any) => (!q ? true : normalize(p?.name).includes(q)))
+      .filter((p: any) => {
+        if (typeChoice === "todos") return true;
+        const t = (p?.tipo || "").toLowerCase();
+        if (typeChoice === "domestico") return t === "domestico";
+        if (typeChoice === "silvestre") return t === "silvestre";
+        return true;
+      })
+      .filter((p: any) => {
+        if (healthChoice === "todos") return true;
+        return normalize(p?.healthStatus) === normalize(healthChoice);
+      });
+  }, [pets, query, typeChoice, healthChoice]);
 
   const handleAddRescuerSuccess = (_: { id: number | string; fechaRescate: string; nombre?: string; telefono?: string }) => {
     setShowAddRescuer(false);
@@ -117,6 +135,36 @@ export const PetsList = (): JSX.Element => {
             Mostrando {filteredPets.length} resultado{filteredPets.length !== 1 ? 's' : ''} para "{query}"
           </p>
         )}
+      </div>
+
+      {/* Filtros: Tipo y Estado en la misma fila (izquierda) */}
+      <div className="container mx-auto p-4 pt-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-gray-800">Tipo:</span>
+            {[{key:"todos",label:"Todos"},{key:"domestico",label:"Doméstico"},{key:"silvestre",label:"Silvestre"}].map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => setTypeChoice(opt.key)}
+                className={`px-3 py-1 rounded-full text-sm border ${typeChoice===opt.key? 'bg-green-600 text-white border-green-600':'bg-white text-gray-700 border-gray-300'}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-gray-800">Estado:</span>
+            {["todos","muy bueno","bueno","estable","sano","malo","muy malo"].map(key => (
+              <button
+                key={key}
+                onClick={() => setHealthChoice(key)}
+                className={`px-3 py-1 rounded-full text-sm border ${healthChoice===key? 'bg-green-600 text-white border-green-600':'bg-white text-gray-700 border-gray-300'}`}
+              >
+                {key[0].toUpperCase()+key.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Pets Grid */}
@@ -181,6 +229,11 @@ export const PetsList = (): JSX.Element => {
             </div>
             ))}
           </div>
+        ) : !minWaitDone ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-12 h-12 rounded-full border-4 border-green-500 border-t-transparent animate-spin"></div>
+            <p className="mt-4 text-gray-700">Cargando animales...</p>
+          </div>
         ) : (
           <div className={getThemeClasses(
             "flex flex-col items-center justify-center py-16 px-4",
@@ -198,16 +251,17 @@ export const PetsList = (): JSX.Element => {
               "text-xl font-semibold text-gray-600 mb-2",
               "text-xl font-semibold text-gray-700 mb-2"
             )}>
-              {query ? `No se encontraron animales para "${query}"` : "No hay animales registrados"}
+              {error ? "No se pudieron cargar animales" : (query ? `No se encontraron animales para "${query}"` : "No hay animales registrados")}
             </h3>
             <p className={getThemeClasses(
               "text-gray-500 text-center max-w-md mb-4",
               "text-gray-600 text-center max-w-md mb-4"
             )}>
-              {query 
-                ? "Intenta con otros términos de búsqueda o revisa la ortografía."
-                : "Aún no se han registrado animales en el sistema. ¡Agrega el primero!"
-              }
+              {error
+                ? "Intenta recargar la página o verifica tu conexión."
+                : (query 
+                  ? "Intenta con otros términos de búsqueda o revisa la ortografía."
+                  : "Aún no se han registrado animales en el sistema. ¡Agrega el primero!")}
             </p>
             {!query && (
               <button
@@ -228,20 +282,19 @@ export const PetsList = (): JSX.Element => {
       </div>
 
       {/* Botón Flotante para Añadir Animal (selector de rescatista) */}
-      <button
-        onClick={() => setShowRescuerPicker(true)}
-        className={`fixed bottom-8 right-8 text-white rounded-full p-4 shadow-lg bg-green-500 hover:bg-green-600`}
-        title="Agregar Animal"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-        <span className={`absolute right-16 top-1/2 transform -translate-y-1/2 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap ${
-          currentRescuerId !== null ? "bg-green-600 text-white" : "bg-gray-500 text-white"
-        }`}>
-          {currentRescuerId !== null ? "Registrar Animal" : "Registra Rescatista Primero"}
-        </span>
-      </button>
+      <div className="fixed bottom-8 right-8">
+        <button
+          onClick={() => setShowRescuerPicker(true)}
+          className="w-14 h-14 text-white rounded-full shadow-lg bg-green-500 hover:bg-green-600 flex items-center justify-center"
+          title="Agregar Animal"
+          aria-label="Agregar Animal"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+        </button>
+        
+      </div>
 
 
       {/* Modals */}
@@ -307,13 +360,25 @@ export const PetsList = (): JSX.Element => {
               <h3 className="text-xl font-semibold">Seleccionar Rescatista</h3>
               <button className="text-gray-500" onClick={() => setShowRescuerPicker(false)} aria-label="Cerrar">✕</button>
             </div>
-            <div className="mb-4">
+            <div className="mb-0">
               <Input
                 type="search"
                 placeholder="Buscar por nombre o teléfono..."
                 value={rescuerSearch}
                 onChange={(e) => setRescuerSearch(e.target.value)}
               />
+            </div>
+            <div className="mt-2 flex justify-end">
+              <Button
+                variant="outline"
+                className="bg-green-500 text-white hover:bg-green-600"
+                onClick={() => {
+                  setShowRescuerPicker(false);
+                  setShowAddRescuer(true);
+                }}
+              >
+                Añadir nuevo rescatista
+              </Button>
             </div>
             <div className="space-y-2">
               {rescuers
@@ -346,18 +411,6 @@ export const PetsList = (): JSX.Element => {
               {rescuers.length === 0 && (
                 <div className="text-center text-gray-500 py-8">No hay rescatistas disponibles.</div>
               )}
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                className="bg-green-500 text-white hover:bg-green-600"
-                onClick={() => {
-                  setShowRescuerPicker(false);
-                  setShowAddRescuer(true);
-                }}
-              >
-                Añadir nuevo rescatista
-              </Button>
             </div>
           </div>
         </div>

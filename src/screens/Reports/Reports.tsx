@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Navbar } from "../../components/Navbar";
 import { useThemeClasses } from "../../hooks/useThemeClasses";
+import generateGlobalReportPdf from "./PdfReport";
 
 export const Reports = (): JSX.Element => {
   const { getThemeClasses } = useThemeClasses();
@@ -52,12 +53,13 @@ export const Reports = (): JSX.Element => {
 
   const metrics = useMemo(() => {
     const totalAnimales = animals.length;
-    const saludOkSet = new Set(["muy bueno", "bueno", "sano", "excelente"]);
-    const normaliza = (s: string | null | undefined) => (s || "").toLowerCase().trim();
+    const saludOkSet = new Set(["muy bueno", "bueno", "sano", "excelente", "estable"]);
+    const normaliza = (s: string | null | undefined) => (s || "").toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    const getTipo = (a: any) => normaliza(a?.tipo ?? a?.tipoAnimal ?? a?.type ?? "");
     const animalesSaludOk = animals.filter((a: any) => saludOkSet.has(normaliza(a.estadoSalud))).length;
     const animalesSaludNoOk = totalAnimales - animalesSaludOk;
-    const tipoDomestico = animals.filter((a: any) => normaliza(a.tipo).includes("domestico")).length;
-    const tipoSilvestre = animals.filter((a: any) => normaliza(a.tipo).includes("silvestre")).length;
+    const tipoDomestico = animals.filter((a: any) => getTipo(a).includes("domestico")).length;
+    const tipoSilvestre = animals.filter((a: any) => getTipo(a).includes("silvestre")).length;
     const animalesConEvaluaciones = new Set((Array.isArray(evaluations) ? evaluations : []).map((ev: any) => ev.nombreAnimal || ev.animalId)).size;
     const especieMap = new Map<string, number>();
     animals.forEach((a: any) => {
@@ -124,54 +126,9 @@ export const Reports = (): JSX.Element => {
         veterinarianCount: metrics.veterinarianCount,
       } as const;
 
-      // Descargar PDF (jsPDF desde CDN)
-      const loadJsPDF = () => new Promise<any>((resolve, reject) => {
-        const existing: any = (window as any).jspdf?.jsPDF;
-        if (existing) return resolve(existing);
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        s.async = true;
-        s.onload = () => resolve((window as any).jspdf.jsPDF);
-        s.onerror = reject;
-        document.head.appendChild(s);
-      });
+      // Descargar PDF estilizado
       (async () => {
-        try {
-          const jsPDF: any = await loadJsPDF();
-          const doc = new jsPDF();
-          const dateStr = new Date().toISOString().slice(0,10);
-
-          doc.setFontSize(16);
-          doc.text('Reporte Automático', 14, 16);
-          doc.setFontSize(11);
-          doc.text(`Fecha: ${snapshot.fechaGeneracion}`, 14, 24);
-          doc.text(`Periodo: ${snapshot.periodo}`, 14, 30);
-
-          let y = 40;
-          const lines: Array<[string, string]> = [
-            ['Total animales', String(snapshot.totalAnimalesRegistrados)],
-            ['Con evaluaciones', String(snapshot.animalesEnTratamiento)],
-            ['Salud OK', String(snapshot.animalesSaludOk)],
-            ['Salud NO OK', String(snapshot.animalesSaludNoOk)],
-            ['Doméstico', String(snapshot.tipoDomestico)],
-            ['Silvestre', String(snapshot.tipoSilvestre)],
-            ['Rescatistas', String(snapshot.rescuerCount)],
-            ['Veterinarios', String(snapshot.veterinarianCount)],
-          ];
-          lines.forEach(([k, v]) => { doc.text(`${k}: ${v}`, 14, y); y += 6; });
-
-          if (snapshot.seriesMensual.labels.length) {
-            y += 4;
-            doc.text('Serie mensual (últimos 6 meses):', 14, y);
-            y += 6;
-            snapshot.seriesMensual.labels.forEach((lab, i) => {
-              doc.text(`${lab}: ${snapshot.seriesMensual.valores[i]}`, 16, y);
-              y += 6;
-            });
-          }
-
-          doc.save(`reporte-${dateStr}.pdf`);
-        } catch {}
+        try { await generateGlobalReportPdf(snapshot); } catch {}
       })();
 
       setSavedReportData(snapshot);

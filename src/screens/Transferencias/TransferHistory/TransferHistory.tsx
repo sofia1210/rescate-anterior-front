@@ -2,7 +2,8 @@ import { Button } from "../../../components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "../../../components/Navbar";
-import { getAllGeolocalizaciones } from "../../../services/transferService";
+import { getAllGeolocalizaciones, getAllLiberations } from "../../../services/transferService";
+import { getAnimalById, getAllAdopciones, getAllAdoptions } from "../../../services/dataService";
 import { useThemeClasses } from "../../../hooks/useThemeClasses";
 
 export const TransferHistory = (): JSX.Element => {
@@ -14,6 +15,8 @@ export const TransferHistory = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
   const layersRef = useRef<any>(null);
+  const [rescuePoint, setRescuePoint] = useState<{ lat: number; lng: number; desc: string } | null>(null);
+  const [events, setEvents] = useState<Array<{ lat: number; lng: number; fecha?: string; desc: string }>>([]);
 
   useEffect(() => {
     let alive = true;
@@ -21,15 +24,61 @@ export const TransferHistory = (): JSX.Element => {
       if (!id) return;
       try {
         setLoading(true);
+        const currentId = decodeURIComponent(String(id));
+
+        // Geolocalizaciones del animal
         const r = await getAllGeolocalizaciones();
         const data: any = r?.data;
         const list = Array.isArray(data) ? data : (data?.postgres ?? []);
-        if (!alive) return;
-        const currentId = decodeURIComponent(String(id));
         const filtered = (Array.isArray(list) ? list : [])
           .filter((g: any) => String(g.animalId) === String(currentId))
           .sort((a: any, b: any) => new Date(a.fechaRegistro || a.createdAt || a.updatedAt || 0).getTime() - new Date(b.fechaRegistro || b.createdAt || b.updatedAt || 0).getTime());
+
+        // Punto de rescate desde el animal
+        let rescue: { lat: number; lng: number; desc: string } | null = null;
+        try {
+          const animal = await getAnimalById(currentId);
+          const lat = Number(animal?.latitud);
+          const lng = Number(animal?.longitud);
+          console.log(animal);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            rescue = { lat, lng, desc: animal?.ubicacionRescate || 'Ubicación de rescate' };
+          }
+        } catch {}
+
+        // Eventos de liberación y adopción
+        const evs: Array<{ lat: number; lng: number; fecha?: string; desc: string }> = [];
+        try {
+          const animal = await getAnimalById(currentId);
+          const nombre = String(animal?.nombre || animal?.name || '').trim();
+          if (nombre) {
+            try {
+              const li = await getAllLiberations();
+              const ld = li?.data; const ll = Array.isArray(ld) ? ld : (ld?.postgres ?? []);
+              ll.filter((x: any) => String(x?.nombreAnimal || '').trim() === nombre)
+                .forEach((x: any) => {
+                  const la = Number(x?.latitud); const lo = Number(x?.longitud);
+                  if (Number.isFinite(la) && Number.isFinite(lo)) evs.push({ lat: la, lng: lo, fecha: x?.fechaLiberacion, desc: x?.descripcion || 'Liberación' });
+                });
+            } catch {}
+            try {
+              // prefer /adoptions si existe, fallback a /adopciones
+              let ad: any;
+              try { ad = await getAllAdoptions(); } catch { ad = await getAllAdopciones(); }
+              const adata = ad?.data; const al = Array.isArray(adata) ? adata : (adata?.postgres ?? []);
+              al.filter((x: any) => String(x?.nombreAnimal || '').trim() === nombre)
+                .forEach((x: any) => {
+                  const la = Number(x?.latitud); const lo = Number(x?.longitud);
+                  if (Number.isFinite(la) && Number.isFinite(lo)) evs.push({ lat: la, lng: lo, fecha: x?.fechaAdopcion, desc: x?.descripcion || 'Adopción' });
+                });
+            } catch {}
+          }
+        } catch {}
+
+        if (!alive) return;
         setGeos(filtered);
+        setRescuePoint(rescue);
+        setEvents(evs);
       } catch (e: any) {
         if (!alive) return;
         setError(e?.message ?? "Error al cargar historial");
@@ -85,11 +134,13 @@ export const TransferHistory = (): JSX.Element => {
     }
     layersRef.current = L.layerGroup().addTo(mapRef.current);
 
-    if (!points.length) return;
+    if (!points.length && !rescuePoint && !events.length) return;
 
     const latlngs = points.map((p) => [p.lat, p.lng]);
     // Polyline del recorrido
-    const line = L.polyline(latlngs, { color: '#16a34a', weight: 3 }).addTo(layersRef.current);
+    if (latlngs.length > 1) {
+      L.polyline(latlngs, { color: '#16a34a', weight: 3 }).addTo(layersRef.current);
+    }
 
     // Markers: puntos intermedios como círculos, último como marker destacado
     points.forEach((p, idx) => {
@@ -109,11 +160,45 @@ export const TransferHistory = (): JSX.Element => {
       }
     });
 
-    // Ajustar vista a todos los puntos, o al menos al recorrido
+    // Rescate: marker/círculo GRANDE en verde
+    if (rescuePoint) {
+      const popup = `<div><div style=\"font-weight:700;color:#166534\">Lugar de rescate</div><div style=\"font-size:12px;color:#4b5563\">${rescuePoint.desc || ''}</div></div>`;
+      L.circleMarker([rescuePoint.lat, rescuePoint.lng], { radius: 14, color: '#16a34a', fillColor: '#16a34a', fillOpacity: 1 })
+        .addTo(layersRef.current).bindPopup(popup);
+    }
+
+    // Eventos
+    events.forEach(ev => {
+      const color = /adop/i.test(ev.desc) ? '#3b82f6' : '#22c55e';
+      const when = ev.fecha ? new Date(ev.fecha).toLocaleString() : '';
+      const popup = `<div><div style=\"font-weight:700\">${ev.desc}</div><div style=\"font-size:12px;color:#4b5563\">${when}</div></div>`;
+      L.circleMarker([ev.lat, ev.lng], { radius: 6, color, fillColor: color, fillOpacity: 0.9 })
+        .addTo(layersRef.current).bindPopup(popup);
+    });
+
+    // Ajustar vista
     try {
-      mapRef.current.fitBounds(line.getBounds(), { padding: [20, 20] });
+      const fg = L.featureGroup([]);
+      if (rescuePoint) fg.addLayer(L.marker([rescuePoint.lat, rescuePoint.lng]));
+      points.forEach(p => fg.addLayer(L.marker([p.lat, p.lng])));
+      events.forEach(e => fg.addLayer(L.marker([e.lat, e.lng])));
+      const b = fg.getLayers().length ? fg.getBounds() : undefined;
+      if (b) mapRef.current.fitBounds(b, { padding: [20, 20] });
     } catch {}
-  }, [points]);
+  }, [points, rescuePoint, events]);
+
+  // Feed combinado para lista:
+  const feed = useMemo(() => {
+    const arr: Array<{ kind: 'Rescate'|'Traslado'|'Liberación'|'Adopción'; fecha?: string; desc: string; lat?: number; lng?: number; key: string }> = [];
+    if (rescuePoint) arr.push({ kind: 'Rescate', fecha: undefined, desc: rescuePoint.desc, lat: rescuePoint.lat, lng: rescuePoint.lng, key: 'rescue' });
+    points.forEach((p, i) => arr.push({ kind: 'Traslado', fecha: p.fecha, desc: p.descripcion || 'Ubicación', lat: p.lat, lng: p.lng, key: `geo-${p.id || i}` }));
+    events.forEach((e, i) => arr.push({ kind: /adop/i.test(e.desc) ? 'Adopción' : 'Liberación', fecha: e.fecha, desc: e.desc, lat: e.lat, lng: e.lng, key: `ev-${i}` }));
+    return arr.sort((a, b) => {
+      const da = a.fecha ? new Date(a.fecha).getTime() : 0;
+      const db = b.fecha ? new Date(b.fecha).getTime() : 0;
+      return da - db;
+    });
+  }, [rescuePoint, points, events]);
 
   return (
     <div className={getThemeClasses(
@@ -127,10 +212,18 @@ export const TransferHistory = (): JSX.Element => {
       />
 
       <div className="container mx-auto p-4">
-        <div className="mb-6">
-          <h2 className="text-white text-xl font-semibold">Historial de Traslados y Seguimiento</h2>
-        </div>
-
+        
+      <div className="flex justify-end pb-4">
+            <Button 
+              onClick={() => navigate(`/geolocation/${id}`)}
+              className="bg-green-500 text-white hover:bg-green-600 flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Registrar Traslado
+            </Button>
+          </div>
         <div className={getThemeClasses(
           "bg-white rounded-lg p-6 shadow-lg space-y-6",
           "bg-white rounded-lg p-6 shadow-lg shadow-green-200/50 border border-green-100 space-y-6"
@@ -142,14 +235,19 @@ export const TransferHistory = (): JSX.Element => {
               <>
                 <div className="h-[360px] rounded overflow-hidden border" id="history-map" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {points.map((p, i: number) => (
-                    <div key={p.id || i} className={getThemeClasses(
+                  {feed.map((item) => (
+                    <div key={item.key} className={getThemeClasses(
                       "p-4 border rounded hover:shadow-md transition-shadow",
                       "p-4 border border-green-200 rounded hover:shadow-md hover:shadow-green-200/50 transition-shadow bg-green-50/30"
                     )}>
-                      <div className="font-semibold mb-1 text-gray-800">{p.descripcion || 'Ubicación'}</div>
-                      <div className="text-sm text-gray-600">{p.fecha ? new Date(p.fecha).toLocaleString() : '-'}</div>
-                      <div className="text-sm hidden">Lat: {p.lat} · Lng: {p.lng}</div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${item.kind==='Rescate' ? 'bg-red-100 text-red-700' : item.kind==='Adopción' ? 'bg-blue-100 text-blue-700' : item.kind==='Liberación' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{item.kind}</span>
+                        <span className="font-semibold text-gray-800">{item.desc || (item.kind==='Traslado' ? 'Ubicación' : item.kind)}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">{item.fecha ? new Date(item.fecha).toLocaleString() : '-'}</div>
+                      {item.lat !== undefined && item.lng !== undefined && (
+                        <div className="text-xs text-gray-500 mt-1">Lat: {item.lat} · Lng: {item.lng}</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -196,17 +294,7 @@ export const TransferHistory = (): JSX.Element => {
               </div>
             )
           )}
-          <div className="flex justify-end">
-            <Button 
-              onClick={() => navigate(`/geolocation/${id}`)}
-              className="bg-green-500 text-white hover:bg-green-600 flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Registrar Traslado
-            </Button>
-          </div>
+          
         </div>
       </div>
     </div>

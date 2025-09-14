@@ -21,7 +21,7 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
     },
     {
       path: "/adopciones",
-      label: "Adopciones"
+      label: "Adopciones y Liberaciones"
     },
     {
       path: "/pets",

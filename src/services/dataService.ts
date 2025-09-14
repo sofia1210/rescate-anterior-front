@@ -34,6 +34,18 @@ export const getVeterinariosList = async () => {
 export const createVeterinario = (data: { nombre: string; telefono: string; especialidad: string; email: string }) =>
   api.post("/veterinarios", data);
 export const getAllAdopciones = () => api.get("/adopciones");
+export const getAllAdoptions = () => api.get("/adoptions");
+export const createAdopcion = (data: {
+  nombreAnimal: string;
+  estado: string; // "Aprobada" | "Pendiente" | "Rechazada"
+  nombreAdoptante: string;
+  contactoAdoptante: string;
+  observaciones?: string;
+  fechaAdopcion: string; // ISO
+  latitud?: number;
+  longitud?: number;
+  descripcion?: string;
+}) => api.post("/adoptions", data);
 
 // Animales helpers
 export const getAnimalById = async (id: string | number) => {

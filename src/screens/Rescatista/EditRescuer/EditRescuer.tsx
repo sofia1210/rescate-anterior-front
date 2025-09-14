@@ -41,8 +41,7 @@ export const EditRescuer = ({
   });
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagenFile, setImagenFile] = useState<File | null>(null);
-  const [imagenPreview, setImagenPreview] = useState<string>("");
+  // Se deshabilita la carga de foto del rescatista según requerimiento
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -83,12 +82,7 @@ export const EditRescuer = ({
           if (r.latitud && r.longitud) {
             setMarkerPosition({ lat: parseFloat(r.latitud), lng: parseFloat(r.longitud) });
           }
-          // Mostrar preview si existe imagen actual
-          if (r.imagen) {
-            const host = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL).replace(/\/$/, "") : "";
-            const file = String(r.imagen).split("/").pop();
-            setImagenPreview(`${host}/uploads/${file}`);
-          }
+          // Foto deshabilitada: ya no se muestra preview ni se edita imagen
         } catch (e) {
           console.error("No se pudo cargar el rescatista:", e);
         }
@@ -103,30 +97,22 @@ export const EditRescuer = ({
 
     try {
       const payload = new FormData();
+      // Campos backend esperados
       payload.append("nombre", formData.nombreRescatista);
       payload.append("telefono", formData.telefonoContacto);
-      payload.append("fechaRescatista", formData.fechaRescate);
-      // Imagen opcional
-      if (imagenFile) {
-        const safeName = `${Date.now()}_${imagenFile.name
-          .toLowerCase()
-          .replace(/\s+/g, "_")
-          .replace(/[^a-z0-9_\.-]/g, "")}`;
-        const renamedFile = new File([imagenFile], safeName, { type: imagenFile.type });
-        // Archivo y pistas para que el backend persista ruta/nombre
-        payload.append("imagen", renamedFile);
-        payload.append("imagenNombre", safeName);
-        payload.append("imagenPath", `/uploads/${safeName}`);
-      }
-      // Solo enviar geolocalización cuando se edita (no en registro)
-      if (isEditing) {
-        payload.append("latitud", formData.latitud);
-        payload.append("longitud", formData.longitud);
-        payload.append("descripcion", formData.detallesRescate);
-        payload.append("ubicacionRescate", formData.ubicacionRescate);
-      } else {
-        payload.append("descripcion", formData.detallesRescate);
-      }
+      // Convierte fecha yyyy-mm-dd → ISO si hace falta
+      const iso = formData.fechaRescate && !formData.fechaRescate.includes("T")
+        ? `${formData.fechaRescate}T10:00:00Z` : formData.fechaRescate;
+      payload.append("fechaRescatista", iso);
+      // Imagen deshabilitada: no se adjunta
+      // En registro también se permiten coordenadas si el usuario marcó el mapa
+      if (formData.latitud) payload.append("latitud", formData.latitud);
+      if (formData.longitud) payload.append("longitud", formData.longitud);
+      if (formData.ubicacionRescate) payload.append("ubicacionRescate", formData.ubicacionRescate);
+      if (formData.detallesRescate) payload.append("descripcion", formData.detallesRescate);
+
+      // Log visible del body
+      console.log("[RESCATISTA] FormData →", Array.from(payload.entries()));
 
       // EDIT vs CREATE
       if (isEditing && rescatistaId) {
@@ -205,24 +191,7 @@ export const EditRescuer = ({
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Foto del rescatista (opcional):</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    setImagenFile(file ?? null);
-                    setImagenPreview(file ? URL.createObjectURL(file) : "");
-                  }}
-                  className="w-full"
-                />
-                {imagenPreview && (
-                  <div className="mt-2">
-                    <img src={imagenPreview} alt="Preview" className="h-32 w-32 object-cover rounded" />
-                  </div>
-                )}
-              </div>
+              {/* Foto deshabilitada */}
 
               {isEditing && (
                 <LoadScript
@@ -251,15 +220,6 @@ export const EditRescuer = ({
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Detalles del Rescate (opcional):</label>
-                <textarea
-                  rows={3}
-                  value={formData.detallesRescate}
-                  onChange={(e) => setFormData({ ...formData, detallesRescate: e.target.value })}
-                  className="w-full border rounded-md px-3 py-2"
-                />
-              </div>
             </div>
 
             <div className="space-y-4" />
