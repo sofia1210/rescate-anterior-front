@@ -6,6 +6,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { Register } from "./screens/Usuario/Registro/Registro";
 import { Login } from "./screens/Usuario/Login/Login";
 import { PetsList } from "./screens/Animal/PetsList/PetsList";
+import { Home } from "./screens/Home/Home";
 import { MedicalEvaluation } from "./screens/Medico/MedicalEvaluation/MedicalEvaluation";
 import { EditMedicalEvaluation } from "./screens/Medico/EditMedicalEvaluation/EditMedicalEvaluation";
 import { Geolocation } from "./screens/Geolocalizacion/Geolocation/Geolocation";
@@ -15,6 +16,7 @@ import { Reports } from "./screens/Reports/Reports";
 import { Management } from "./screens/Gestiones/Management/Management";
 import { MedicalTreatmentView } from "./screens/Medico/MedicalTreatment/MedicalTreatment";
 import { Veterinario } from "./screens/Veterinarios/Veterinario/Veterinario";
+import { VeterinarianList } from "./screens/Veterinarios/VeterinarioList";
 import { Adopciones } from "./screens/Gestiones/Adopciones/Adopciones";
 import { Liberaciones } from "./screens/Gestiones/Liberaciones/Liberaciones";
 import { RescuerDetails } from "./screens/Rescatista/RescuerDetails/RescuerDetails";
@@ -25,6 +27,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/registro" element={<Register />} />
           <Route path="/pets" element={<PetsList />} />
           <Route path="/medical-evaluation/:id" element={<MedicalEvaluation />} />
@@ -35,7 +38,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/medical-treatment/:id" element={<MedicalTreatmentView />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/management" element={<Management />} />
-          <Route path="/login" element={<Navigate to="/pets" replace />} />
+          <Route path="/login" element={<Navigate to="/home" replace />} />
+          <Route path="/veterinarios" element={<VeterinarianList />} />
           <Route path="/veterinario/:id" element={<Veterinario />} />
           <Route path="/adopciones" element={<Adopciones />} />
           <Route path="/liberaciones" element={<Liberaciones />} />

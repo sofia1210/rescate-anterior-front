@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { FormFieldWithError } from "../../../components/ui/form-field-with-error";
+import { Breadcrumbs } from "../../../components/ui/breadcrumbs";
 // Leaflet map (using global L from CDN)
 
 interface AddAnimalProps {
@@ -229,15 +231,27 @@ const handleSubmit = async (e: React.FormEvent) => {
           <h2 className="text-2xl font-semibold">Datos del Animal</h2>
         </div>
 
+        <Breadcrumbs items={[
+          { label: "Inicio", path: "/home" },
+          { label: "Animales", path: "/pets" },
+          { label: isEditing ? "Editar Animal" : "Agregar Animal", current: true }
+        ]} />
+
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 md:grid-cols-2 gap-8"
         >
           <div className="space-y-4">
-            <InputField
+            <FormFieldWithError
               label="Nombre"
               value={formData.nombre}
               onChange={(v) => setFormData({ ...formData, nombre: v })}
+              pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
+              minLength={2}
+              maxLength={60}
+              autoComplete="off"
+              required={true}
+              validateMessage="Solo letras, espacios y algunos símbolos permitidos"
             />
             <DropdownField
               label="Tipo"
@@ -251,11 +265,19 @@ const handleSubmit = async (e: React.FormEvent) => {
               label="Especie"
               value={formData.especie}
               onChange={(v) => setFormData({ ...formData, especie: v })}
+              pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
+              minLength={2}
+              maxLength={60}
+              autoComplete="off"
             />
             <InputField
               label="Raza"
               value={formData.raza}
               onChange={(v) => setFormData({ ...formData, raza: v })}
+              pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
+              minLength={2}
+              maxLength={60}
+              autoComplete="off"
             />
             <DropdownField
               label="Sexo"
@@ -314,6 +336,8 @@ const handleSubmit = async (e: React.FormEvent) => {
               onChange={(v) =>
                 setFormData({ ...formData, ubicacionRescate: v })
               }
+              minLength={3}
+              maxLength={140}
             />
             <div className="flex gap-4 text-sm">
               <span>Latitud: {formData.latitud}</span>
@@ -359,10 +383,18 @@ const InputField = ({
   label,
   value,
   onChange,
+  pattern,
+  minLength,
+  maxLength,
+  autoComplete,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  pattern?: string;
+  minLength?: number;
+  maxLength?: number;
+  autoComplete?: string;
 }) => (
   <div>
     <label className="block text-sm font-medium mb-1">{label}:</label>
@@ -370,6 +402,10 @@ const InputField = ({
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      pattern={pattern}
+      minLength={minLength}
+      maxLength={maxLength}
+      autoComplete={autoComplete}
       className="w-full"
       required
     />

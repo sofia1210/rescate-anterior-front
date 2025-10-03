@@ -3,6 +3,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "../../../components/Navbar";
+import { Breadcrumbs } from "../../../components/ui/breadcrumbs";
 
 export const EditTransferHistory = (): JSX.Element => {
   const { id } = useParams();
@@ -32,6 +33,11 @@ export const EditTransferHistory = (): JSX.Element => {
       />
 
       <div className="container mx-auto p-4">
+        <Breadcrumbs items={[
+          { label: "Historial", path: `/transfer-history/${id}` },
+          { label: "Editar Traslado", current: true }
+        ]} />
+        
         <div className="mb-6">
           <h2 className="text-white text-xl font-semibold">Editar/Agregar Traslado Animal {id}</h2>
         </div>
@@ -45,6 +51,8 @@ export const EditTransferHistory = (): JSX.Element => {
                   value={formData.ubicacionAnterior}
                   onChange={(e) => setFormData({ ...formData, ubicacionAnterior: e.target.value })}
                   className="w-full"
+                  minLength={3}
+                  maxLength={140}
                   required
                 />
               </div>
@@ -67,6 +75,8 @@ export const EditTransferHistory = (): JSX.Element => {
                   value={formData.ubicacionNueva}
                   onChange={(e) => setFormData({ ...formData, ubicacionNueva: e.target.value })}
                   className="w-full"
+                  minLength={3}
+                  maxLength={140}
                   required
                 />
               </div>
@@ -89,6 +99,8 @@ export const EditTransferHistory = (): JSX.Element => {
                   value={formData.motivoTraslado}
                   onChange={(e) => setFormData({ ...formData, motivoTraslado: e.target.value })}
                   className="w-full"
+                  minLength={3}
+                  maxLength={140}
                   required
                 />
               </div>
@@ -99,6 +111,8 @@ export const EditTransferHistory = (): JSX.Element => {
                   value={formData.responsableTraslado}
                   onChange={(e) => setFormData({ ...formData, responsableTraslado: e.target.value })}
                   className="w-full"
+                  minLength={3}
+                  maxLength={80}
                   required
                 />
               </div>
@@ -109,6 +123,7 @@ export const EditTransferHistory = (): JSX.Element => {
                   value={formData.observaciones}
                   onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
                   className="w-full min-h-[100px] p-2 border rounded-md"
+                  maxLength={500}
                   required
                 />
               </div>
@@ -123,6 +138,7 @@ export const EditTransferHistory = (): JSX.Element => {
                     value={formData.fechaTraslado}
                     onChange={(e) => setFormData({ ...formData, fechaTraslado: e.target.value })}
                     className="flex-1"
+                    max={new Date().toISOString().split('T')[0]}
                     required
                   />
                   <Input

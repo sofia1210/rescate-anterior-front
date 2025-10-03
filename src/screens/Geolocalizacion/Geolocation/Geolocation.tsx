@@ -165,6 +165,8 @@ export const Geolocation = (): JSX.Element => {
               placeholder="Dirección o referencia"
               value={newPos?.descripcion || ""}
               onChange={(e) => setNewPos((prev) => prev ? { ...prev, descripcion: e.target.value } : { lat: -17.7833, lng: -63.1821, descripcion: e.target.value })}
+              minLength={3}
+              maxLength={160}
             />
           </div>
           <div className="flex justify-end mt-3">

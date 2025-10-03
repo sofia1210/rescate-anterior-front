@@ -89,6 +89,11 @@ export const Login = (): JSX.Element => {
               <Input
                 id="username"
                 name="username"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
                 className="bg-transparent border-white/30 text-white placeholder:text-white/50"
                 placeholder="Ingresa tu correo"
               />
@@ -106,6 +111,9 @@ export const Login = (): JSX.Element => {
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  minLength={8}
+                  required
                   className="bg-transparent border-white/30 text-white placeholder:text-white/50 pr-10"
                   placeholder="Ingresa tu contraseña"
                 />

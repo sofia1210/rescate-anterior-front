@@ -227,7 +227,7 @@ export const Adopciones = (): JSX.Element => {
         <div className="relative mb-3">
           <Input
             type="search"
-            placeholder="🔍 Buscar animal por nombre..."
+            placeholder="Buscar por nombre"
             className="w-full pl-4 pr-12 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-green-500 transition-colors duration-200 text-lg"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -352,15 +352,15 @@ export const Adopciones = (): JSX.Element => {
             <div className="grid grid-cols-1 gap-3 mt-2">
               <div>
                 <label className="block text-sm font-medium mb-1">Nombre del adoptante</label>
-                <input value={adoptName} onChange={(e)=>setAdoptName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Ej. Carlos Ruiz" />
+                <input value={adoptName} onChange={(e)=>setAdoptName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Ej. Carlos Ruiz" minLength={2} maxLength={80} pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,80}$" required />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Contacto del adoptante</label>
-                <input value={adoptContact} onChange={(e)=>setAdoptContact(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Teléfono o correo" />
+                <input value={adoptContact} onChange={(e)=>setAdoptContact(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Teléfono o correo" pattern="(^[0-9]{7,15}$)|(^[^\s@]+@[^\s@]+\.[^\s@]+$)" required />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Observaciones</label>
-                <input value={adoptObs} onChange={(e)=>setAdoptObs(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Entrega inmediata, requisitos, etc." />
+                <input value={adoptObs} onChange={(e)=>setAdoptObs(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Entrega inmediata, requisitos, etc." maxLength={300} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Ubicación de entrega (opcional)</label>

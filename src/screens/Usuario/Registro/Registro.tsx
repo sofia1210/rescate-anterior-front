@@ -114,6 +114,11 @@ export const Register = (): JSX.Element => {
               <Input
                 id="username"
                 name="username"
+                type="text"
+                autoComplete="username"
+                minLength={3}
+                maxLength={50}
+                required
                 placeholder="Ingresa tu usuario"
                 className="bg-transparent border-white/30 text-white placeholder:text-white/50"
               />
@@ -127,6 +132,9 @@ export const Register = (): JSX.Element => {
                 id="email"
                 name="email"
                 type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
                 placeholder="ejemplo@correo.com"
                 className="bg-transparent border-white/30 text-white placeholder:text-white/50"
               />
@@ -139,6 +147,11 @@ export const Register = (): JSX.Element => {
               <Input
                 id="firstName"
                 name="firstName"
+                type="text"
+                autoComplete="given-name"
+                minLength={2}
+                maxLength={60}
+                required
                 placeholder="Ingresa tu nombre"
                 className="bg-transparent border-white/30 text-white placeholder:text-white/50"
               />
@@ -151,6 +164,11 @@ export const Register = (): JSX.Element => {
               <Input
                 id="lastName"
                 name="lastName"
+                type="text"
+                autoComplete="family-name"
+                minLength={2}
+                maxLength={60}
+                required
                 placeholder="Ingresa tu apellido"
                 className="bg-transparent border-white/30 text-white placeholder:text-white/50"
               />
@@ -165,6 +183,9 @@ export const Register = (): JSX.Element => {
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  minLength={12}
+                  required
                   placeholder="Crea una contraseña segura"
                   className="bg-transparent border-white/30 text-white placeholder:text-white/50 pr-10"
                 />
@@ -187,6 +208,9 @@ export const Register = (): JSX.Element => {
                   id="confirmPassword"
                   name="confirmPassword"
                   type={showConfirm ? "text" : "password"}
+                  autoComplete="new-password"
+                  minLength={12}
+                  required
                   placeholder="Repite tu contraseña"
                   className="bg-transparent border-white/30 text-white placeholder:text-white/50 pr-10"
                 />

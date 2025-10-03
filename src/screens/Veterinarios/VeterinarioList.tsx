@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Navbar } from "../../components/Navbar";
+import { Input } from "../../components/ui/input";
 
 export const VeterinarianList = () => {
   const { id } = useParams();
   const [veterinarians, setVeterinarians] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const fetchVeterinarians = async () => {
@@ -24,23 +27,46 @@ export const VeterinarianList = () => {
     fetchVeterinarians();
   }, []);
 
-  if (loading) return <div>Cargando veterinarios...</div>;
+  const filtered = useMemo(() => {
+    const q = (query || "").toLowerCase().trim();
+    if (!q) return veterinarians;
+    return veterinarians.filter((v) =>
+      (v?.nombre || "").toLowerCase().includes(q) ||
+      (v?.telefono || "").toLowerCase().includes(q)
+    );
+  }, [veterinarians, query]);
+
+  if (loading) return <div className="container mx-auto p-4">Cargando veterinarios...</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl text-green-600 font-bold mb-4">Lista de Veterinarios</h2>
-      <ul>
-        {veterinarians.map((vet) => (
+    <div className="min-h-screen bg-green-50">
+      <Navbar title="Veterinarios" />
+      <div className="container mx-auto p-4">
+        <div className="mb-3">
+          <Input
+            type="search"
+            placeholder="Buscar por nombre o teléfono"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Buscar veterinario"
+          />
+          {query && (
+            <p className="text-sm text-gray-600 mt-2">Mostrando {filtered.length} resultado{filtered.length !== 1 ? 's' : ''} para "{query}"</p>
+          )}
+        </div>
+        <ul>
+        {filtered.map((vet) => (
           <li key={vet.id || vet._id} className="mb-2 p-2 border rounded">
             <div className="font-semibold">{vet.nombre}</div>
             <div className="text-sm text-gray-600">{vet.telefono}</div>
             {/* Agrega más campos si los tienes */}
           </li>
         ))}
-        {veterinarians.length === 0 && (
+        {filtered.length === 0 && (
           <li className="text-gray-500">No hay veterinarios registrados.</li>
         )}
-      </ul>
+        </ul>
+      </div>
     </div>
   );
 };

@@ -154,6 +154,9 @@ export const EditRescuer = ({
                   type="text"
                   value={formData.nombreRescatista}
                   onChange={(e) => setFormData({ ...formData, nombreRescatista: e.target.value })}
+                  minLength={2}
+                  maxLength={80}
+                  pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,80}$"
                   required
                 />
               </div>
@@ -163,7 +166,7 @@ export const EditRescuer = ({
                 <Input
                   type="tel"
                   inputMode="numeric"
-                  pattern="[0-9]*"
+                  pattern="^[0-9]{7,15}$"
                   value={formData.telefonoContacto}
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, "");

@@ -109,7 +109,7 @@ export const PetsList = (): JSX.Element => {
         <div className="relative">
           <Input
             type="search"
-            placeholder="🔍 Buscar animal por nombre..."
+            placeholder="Buscar por nombre, especie o ID"
             className="w-full pl-4 pr-12 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-green-500 transition-colors duration-200 text-lg"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

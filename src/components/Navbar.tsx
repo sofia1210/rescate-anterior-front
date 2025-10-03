@@ -16,6 +16,10 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
 
   const navigationItems = [
     {
+      path: "/home",
+      label: "Inicio"
+    },
+    {
       path: "/reports",
       label: "Reportes"
     },
