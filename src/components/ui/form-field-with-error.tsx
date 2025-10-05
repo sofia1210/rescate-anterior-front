@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "./input";
-import { useThemeClasses } from "../../hooks/useThemeClasses";
+// import { useThemeClasses } from "../../hooks/useThemeClasses";
 
 interface FormFieldWithErrorProps {
   label: string;
@@ -16,6 +16,7 @@ interface FormFieldWithErrorProps {
   className?: string;
   inputMode?: "text" | "search" | "email" | "tel" | "url" | "none" | "numeric" | "decimal";
   validateMessage?: string;
+  forceValidate?: boolean;
 }
 
 export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
@@ -31,9 +32,10 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
   autoComplete,
   className = "w-full",
   inputMode,
-  validateMessage
+  validateMessage,
+  forceValidate
 }) => {
-  const { getThemeClasses } = useThemeClasses();
+  // const { getThemeClasses } = useThemeClasses();
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [shouldValidate, setShouldValidate] = useState(false);
 
@@ -58,6 +60,10 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
     setErrorMessage(message);
   }, [value, shouldValidate, required, minLength, maxLength, pattern, validateMessage, label]);
 
+  useEffect(() => {
+    if (forceValidate) setShouldValidate(true);
+  }, [forceValidate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setShouldValidate(true);
     onChange(e.target.value);
@@ -70,7 +76,7 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
   return (
     <div className="space-y-1">
       <label htmlFor={`field-${label}`} className="block text-sm font-medium mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-current">*</span>}
       </label>
       <Input
         id={`field-${label}`}

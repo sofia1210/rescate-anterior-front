@@ -193,8 +193,8 @@ export const PetsList = (): JSX.Element => {
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-center md:text-left">{pet.name}</h3>
-                <p className="text-gray-600"><span className="font-medium">Nombre:</span> {pet.name}</p>
                 <p className="text-gray-600"><span className="font-medium">Especie:</span> {pet.species}</p>
+                <p className="text-gray-600"><span className="font-medium">Raza:</span> {pet.breed}</p>
                 <p className="text-gray-600"><span className="font-medium">Tipo:</span> {pet.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}</p>
                 <p className="text-gray-600"><span className="font-medium">Rescatista:</span> {pet.rescuer?.name || '-'}</p>
                 
@@ -350,32 +350,34 @@ export const PetsList = (): JSX.Element => {
       {showRescuerPicker && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
           <div className={getThemeClasses(
-            "bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl",
-            "bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-green-200"
+            "bg-white rounded-lg p-6 md:p-7 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl",
+            "bg-white rounded-lg p-6 md:p-7 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-green-200"
           )}>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between pb-3 border-b mb-4">
               <h3 className="text-xl font-semibold">Seleccionar Rescatista</h3>
               <button className="text-gray-500" onClick={() => setShowRescuerPicker(false)} aria-label="Cerrar">✕</button>
             </div>
-            <div className="mb-0">
-              <Input
-                type="search"
-                placeholder="Buscar por nombre o teléfono..."
-                value={rescuerSearch}
-                onChange={(e) => setRescuerSearch(e.target.value)}
-              />
-            </div>
-            <div className="mt-2 flex justify-end">
-              <Button
-                variant="outline"
-                className="bg-green-500 text-white hover:bg-green-600"
-                onClick={() => {
-                  setShowRescuerPicker(false);
-                  setShowAddRescuer(true);
-                }}
-              >
-                Añadir nuevo rescatista
-              </Button>
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center mb-4">
+              <div className="flex-1">
+                <Input
+                  type="search"
+                  placeholder="Buscar por nombre o teléfono..."
+                  value={rescuerSearch}
+                  onChange={(e) => setRescuerSearch(e.target.value)}
+                />
+              </div>
+              <div>
+                <Button
+                  variant="outline"
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={() => {
+                    setShowRescuerPicker(false);
+                    setShowAddRescuer(true);
+                  }}
+                >
+                  Añadir rescatista
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               {rescuers
@@ -393,7 +395,7 @@ export const PetsList = (): JSX.Element => {
                       <div className="text-sm text-gray-600">{r.telefono}</div>
                     </div>
                     <Button
-                      className="bg-green-500 text-white hover:bg-green-600"
+                      className="bg-green-600 text-white hover:bg-green-700"
                       onClick={() => {
                         setCurrentRescuerId((r.id || r._id) as any);
                         setSelectedRescuer(r);
@@ -406,7 +408,7 @@ export const PetsList = (): JSX.Element => {
                   </div>
                 ))}
               {rescuers.length === 0 && (
-                <div className="text-center text-gray-500 py-8">No hay rescatistas disponibles.</div>
+                <div className="text-center text-gray-500 py-10">No hay rescatistas disponibles.</div>
               )}
             </div>
           </div>

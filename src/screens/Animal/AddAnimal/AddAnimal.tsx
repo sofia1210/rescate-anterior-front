@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { FormFieldWithError } from "../../../components/ui/form-field-with-error";
-import { Breadcrumbs } from "../../../components/ui/breadcrumbs";
+// import { Breadcrumbs } from "../../../components/ui/breadcrumbs";
+import { Notification } from "../../../components/ui/notification";
+import { MapHelpModal } from "../../../components/ui/map-help";
 // Leaflet map (using global L from CDN)
 
 interface AddAnimalProps {
@@ -90,17 +92,78 @@ export const AddAnimal = ({
   const [markerPosition, setMarkerPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenPreview, setImagenPreview] = useState<string>("");
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [showMapHelp, setShowMapHelp] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const requestCurrentLocation = React.useCallback(() => {
+    if (!navigator.geolocation) {
+      setNotification({ type: 'error', message: 'Tu navegador no soporta geolocalización.' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        try { mapRef.current?.setView([lat, lng], 16); } catch {}
+        setMarkerPosition({ lat, lng });
+        setFormData((prev) => ({ ...prev, latitud: String(lat), longitud: String(lng) }));
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+          const r = await fetch(url);
+          const j = await r.json();
+          const name = j?.display_name as string | undefined;
+          if (name) setFormData((prev) => ({ ...prev, ubicacionRescate: name }));
+        } catch {}
+      },
+      (err) => {
+        const reason = err?.code === 1 ? 'Permiso denegado para acceder a la ubicación' : 'No se pudo obtener tu ubicación';
+        setNotification({ type: 'error', message: `${reason}. Puedes seleccionar el punto manualmente en el mapa.` });
+        try { mapRef.current?.setZoom(14); } catch {}
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+    );
+  }, []);
 
   React.useEffect(() => {
     const L: any = (window as any).L;
     const container = document.getElementById('add-animal-map');
     if (!L || !container) return;
     if (!mapRef.current) {
-      mapRef.current = L.map('add-animal-map').setView([center.lat, center.lng], 13);
+      mapRef.current = L.map('add-animal-map').setView([center.lat, center.lng], 15);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(mapRef.current);
       mapRef.current.on('click', handleLeafletClick);
+
+      // Intentar centrar en ubicación real del usuario
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            mapRef.current.setView([lat, lng], 16);
+            setMarkerPosition({ lat, lng });
+            setFormData((prev) => ({ ...prev, latitud: String(lat), longitud: String(lng) }));
+            (async () => {
+              try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+                const r = await fetch(url);
+                const j = await r.json();
+                const name = j?.display_name as string | undefined;
+                if (name) setFormData((prev) => ({ ...prev, ubicacionRescate: name }));
+              } catch {}
+            })();
+          },
+          () => {
+            // Sin permiso: aplica un zoom amigable al centro por defecto
+            try { mapRef.current.setZoom(14); } catch {}
+          },
+          { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 }
+        );
+      } else {
+        try { mapRef.current.setZoom(14); } catch {}
+      }
     }
-    if (markerPosition) {
+    if (markerPosition && mapRef.current) {
       if (markerRef.current) {
         markerRef.current.setLatLng([markerPosition.lat, markerPosition.lng]);
       } else {
@@ -126,9 +189,10 @@ export const AddAnimal = ({
   // ...existing code...
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  // Validación mínima de coordenadas (mapa)
+  setSubmitted(true);
+  // Validación simple: lat/long deben existir
   if (!formData.latitud || !formData.longitud) {
-    alert("Por favor seleccioná una ubicación en el mapa (latitud/longitud).");
+    setNotification({ type: 'error', message: 'Selecciona la ubicación en el mapa o usa tu ubicación.' });
     return;
   }
 
@@ -210,40 +274,37 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center gap-4 mb-6 sticky top-0 bg-white z-[9999] pb-4">
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-          </button>
-          <h2 className="text-2xl font-semibold">Datos del Animal</h2>
+      <div className="bg-white rounded-[2rem] shadow-xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+        {/* Header estilo AnimalDetails */}
+        <div className="bg-white z-20 border-b border-green-200 px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={onClose} 
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Cerrar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 tracking-tight mb-1">Datos del animal a registrar</h2>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span>Completa los campos obligatorios marcados con *</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <Breadcrumbs items={[
-          { label: "Inicio", path: "/home" },
-          { label: "Animales", path: "/pets" },
-          { label: isEditing ? "Editar Animal" : "Agregar Animal", current: true }
-        ]} />
+        {/* Breadcrumbs removidos para simplificar el header del modal */}
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8"
-        >
+        <div className="flex-1 overflow-y-auto">
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 px-8 py-6"
+          >
           <div className="space-y-4">
             <FormFieldWithError
               label="Nombre"
@@ -255,69 +316,88 @@ const handleSubmit = async (e: React.FormEvent) => {
               autoComplete="off"
               required={true}
               validateMessage="Solo letras, espacios y algunos símbolos permitidos"
+              placeholder="ej. Pequeño Jaguar"
+              forceValidate={submitted}
             />
             <DropdownField
-              label="Tipo"
+              label="Tipo *"
               value={formData.tipo}
               onChange={(v) =>
                 setFormData({ ...formData, tipo: v as TipoAnimal })
               }
               options={["doméstico", "silvestre"]}
+              required
+              forceValidate={submitted}
             />
             <DropdownField
-              label="Especie"
+              label="Especie *"
               value={formData.especie}
               onChange={(v) => setFormData({ ...formData, especie: v })}
               options={["Felino", "Canino", "Ave", "Reptil", "Roedor", "Marsupial", "Anfibio", "Otro"]}
+              required
+              forceValidate={submitted}
             />
-            <InputField
-              label="Raza"
+            <FormFieldWithError
+              label="Raza *"
               value={formData.raza}
               onChange={(v) => setFormData({ ...formData, raza: v })}
               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
               minLength={2}
               maxLength={60}
               autoComplete="off"
+              placeholder="ej. Jaguar"
+              required
+              forceValidate={submitted}
             />
             <DropdownField
-              label="Sexo"
+              label="Sexo *"
               value={formData.sexo}
               onChange={(v) => setFormData({ ...formData, sexo: v })}
               options={["macho", "hembra"]}
+              required
+              forceValidate={submitted}
             />
             <DropdownField
-              label="Estado de Salud"
+              label="Estado de Salud *"
               value={formData.estadoSalud}
               onChange={(v) => setFormData({ ...formData, estadoSalud: v })}
               options={["muy bueno", "bueno", "estable", "malo", "muy malo"]}
+              required
+              forceValidate={submitted}
             />
             <DropdownField
-              label="Tipo de Alimentación"
+              label="Tipo de Alimentación *"
               value={formData.tipoAlimentacion}
               onChange={(v) =>
                 setFormData({ ...formData, tipoAlimentacion: v })
               }
               options={["Carnívoro", "Herbívoro", "Insectívoro", "Omnívoro"]}
+              required
+              forceValidate={submitted}
             />
             <DropdownField
-              label="Cantidad Recomendada"
+              label="Cantidad Recomendada *"
               value={formData.cantidadRecomendada}
               onChange={(v) =>
                 setFormData({ ...formData, cantidadRecomendada: v })
               }
               options={["100 g", "250 g", "500 g", "1 kg", "2 kg"]}
+              required
+              forceValidate={submitted}
             />
             <DropdownField
-              label="Frecuencia Recomendada"
+              label="Frecuencia Recomendada *"
               value={formData.frecuenciaRecomendada}
               onChange={(v) =>
                 setFormData({ ...formData, frecuenciaRecomendada: v })
               }
               options={["Diaria", "Semanal", "Mensual"]}
+              required
+              forceValidate={submitted}
             />
             <div>
               <label className="block text-sm font-medium mb-1">
-                Fecha de Rescate:
+                Fecha de Rescate *
               </label>
               <Input
                 type="date"
@@ -330,7 +410,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 required
               />
             </div>
-            <InputField
+            <FormFieldWithError
               label="Ubicación del Rescate"
               value={formData.ubicacionRescate}
               onChange={(v) =>
@@ -338,21 +418,50 @@ const handleSubmit = async (e: React.FormEvent) => {
               }
               minLength={3}
               maxLength={140}
+              placeholder="ej. Av. Siempre Viva 742, Parque Central"
+              required
+              forceValidate={submitted}
             />
-            <div className="flex gap-4 text-sm">
-              <span>Latitud: {formData.latitud}</span>
-              <span>Longitud: {formData.longitud}</span>
+            {/* Coordenadas ocultas para usuario final */}
+            <div className="flex items-center justify-between mt-2">
+              <button
+                type="button"
+                onClick={() => setShowMapHelp(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-green-200 text-green-700 bg-white hover:bg-green-50 text-sm"
+                aria-label="¿Cómo usar el mapa?"
+                title="¿Cómo usar el mapa?"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm0 13.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Zm0-9a3.75 3.75 0 0 0-3.75 3.75.75.75 0 0 0 1.5 0 2.25 2.25 0 1 1 3.014 2.124c-.81.27-1.514.843-1.919 1.582-.213.389-.345.84-.345 1.294v.25a.75.75 0 0 0 1.5 0v-.25c0-.248.062-.494.18-.711.22-.402.61-.73 1.087-.89A3.75 3.75 0 0 0 12 6.75Z" clipRule="evenodd" />
+                </svg>
+                <span>¿Cómo usar el mapa?</span>
+              </button>
+              <Button
+                type="button"
+                className="bg-green-600 text-white hover:bg-green-700 px-3 py-1 text-sm"
+                onClick={requestCurrentLocation}
+              >
+                Usar mi ubicación
+              </Button>
             </div>
-            <div id="add-animal-map" style={mapContainerStyle} className="rounded" />
+            {/* Texto inline retirado; se usa MapHelpModal para ayuda completa */}
+            <div id="add-animal-map" style={mapContainerStyle} className="rounded mt-2" />
           </div>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Foto del Animal (opcional):</label>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/png, image/jpeg, image/jpg"
                 onChange={(e) => {
                   const file = e.target.files?.[0] || null;
+                  if (file && (file.type === 'image/webp' || /\.webp$/i.test(file.name))) {
+                    setNotification({ type: 'error', message: 'Formato WEBP no soportado. Sube una imagen PNG o JPG.' });
+                    e.currentTarget.value = '';
+                    setImagenFile(null);
+                    setImagenPreview('');
+                    return;
+                  }
                   setImagenFile(file);
                   setImagenPreview(file ? URL.createObjectURL(file) : "");
                 }}
@@ -364,21 +473,33 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </div>
               )}
             </div>
+            
           </div>
-          <div className="md:col-span-2 mt-8 flex justify-center">
-            <Button
-              type="submit"
-              className="bg-green-500 text-white hover:bg-green-600 px-8"
-            >
-              {isEditing ? "GUARDAR CAMBIOS" : "AGREGAR ANIMAL"}
-            </Button>
-          </div>
-        </form>
+            <div className="md:col-span-2 mt-2 flex justify-center">
+              <Button
+                type="submit"
+                className="bg-green-600 text-white hover:bg-green-700 px-8"
+              >
+                {isEditing ? "GUARDAR CAMBIOS" : "AGREGAR ANIMAL"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
+      {notification && (
+        <Notification
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
+      <MapHelpModal open={showMapHelp} onClose={() => setShowMapHelp(false)} />
     </div>
   );
 };
 
+// InputField ya no se usa (reemplazado por FormFieldWithError para mensajes), pero lo dejamos comentado si se necesita más adelante
+/*
 const InputField = ({
   label,
   value,
@@ -387,6 +508,7 @@ const InputField = ({
   minLength,
   maxLength,
   autoComplete,
+  placeholder,
 }: {
   label: string;
   value: string;
@@ -395,9 +517,10 @@ const InputField = ({
   minLength?: number;
   maxLength?: number;
   autoComplete?: string;
+  placeholder?: string;
 }) => (
   <div>
-    <label className="block text-sm font-medium mb-1">{label}:</label>
+    <label className="block text-sm font-medium mb-1">{label}</label>
     <Input
       type="text"
       value={value}
@@ -406,37 +529,48 @@ const InputField = ({
       minLength={minLength}
       maxLength={maxLength}
       autoComplete={autoComplete}
+      placeholder={placeholder}
       className="w-full"
       required
     />
   </div>
 );
+*/
 
 const DropdownField = ({
   label,
   value,
   onChange,
   options,
+  required,
+  forceValidate,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
-}) => (
-  <div>
-    <label className="block text-sm font-medium mb-1">{label}:</label>
-    <select
-      className="w-full border rounded px-3 py-2"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      required
-    >
-      <option value="">Selecciona una opción</option>
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt.charAt(0).toUpperCase() + opt.slice(1)}
-        </option>
-      ))}
-    </select>
-  </div>
-);
+  required?: boolean;
+  forceValidate?: boolean;
+}) => {
+  const showError = !!forceValidate && required && !String(value || '').trim();
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <select
+        className={`w-full border rounded px-3 py-2 ${showError ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-400' : ''}`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">Selecciona una opción</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt.charAt(0).toUpperCase() + opt.slice(1)}
+          </option>
+        ))}
+      </select>
+      {showError && (
+        <div className="text-amber-600 text-sm mt-1" role="alert">Este campo es obligatorio</div>
+      )}
+    </div>
+  );
+};
