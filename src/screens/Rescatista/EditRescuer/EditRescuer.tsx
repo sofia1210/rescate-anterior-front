@@ -97,8 +97,9 @@ export const EditRescuer = ({
 
     try {
       const payload = new FormData();
-      // Campos backend esperados
-      payload.append("nombre", formData.nombreRescatista);
+      // Campos backend esperados (capitalizar)
+      const toTitle = (s: string) => s.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      payload.append("nombre", toTitle(formData.nombreRescatista.trim()));
       payload.append("telefono", formData.telefonoContacto);
       // Convierte fecha yyyy-mm-dd → ISO si hace falta
       const iso = formData.fechaRescate && !formData.fechaRescate.includes("T")
@@ -108,8 +109,8 @@ export const EditRescuer = ({
       // En registro también se permiten coordenadas si el usuario marcó el mapa
       if (formData.latitud) payload.append("latitud", formData.latitud);
       if (formData.longitud) payload.append("longitud", formData.longitud);
-      if (formData.ubicacionRescate) payload.append("ubicacionRescate", formData.ubicacionRescate);
-      if (formData.detallesRescate) payload.append("descripcion", formData.detallesRescate);
+      if (formData.ubicacionRescate) payload.append("ubicacionRescate", toTitle(formData.ubicacionRescate.trim()));
+      if (formData.detallesRescate) payload.append("descripcion", toTitle(formData.detallesRescate.trim()));
 
       // Log visible del body
       console.log("[RESCATISTA] FormData →", Array.from(payload.entries()));

@@ -1,5 +1,6 @@
 /*
-  Global report PDF generator with a clean, formal and modern layout.
+  Global report PDF generator with a minimal, professional layout.
+  Guiding principles: high legibility, restrained color palette, clear hierarchy.
   Exports: generateGlobalReportPdf(snapshot)
 */
 
@@ -36,20 +37,19 @@ const loadJsPDF = () => new Promise<any>((resolve, reject) => {
 
 const drawHeader = (doc: any, title: string, subtitle: string) => {
   const pageWidth = doc.internal.pageSize.getWidth();
-  const bannerHeight = 28;
-  // Gradient-like band using two rectangles
-  doc.setFillColor(16, 185, 129); // emerald-500
-  doc.rect(0, 0, pageWidth, bannerHeight, 'F');
-  doc.setFillColor(5, 150, 105); // emerald-600
-  doc.rect(0, bannerHeight - 6, pageWidth, 6, 'F');
+  // Subtle top rule
+  doc.setDrawColor(203, 213, 225); // slate-300
+  doc.line(14, 16, pageWidth - 14, 16);
   // Title
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(17, 24, 39); // gray-900
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(title, 14, 18);
+  doc.setFontSize(14);
+  doc.text(title, 14, 14);
+  // Subtitle
+  doc.setTextColor(100, 116, 139); // slate-500
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text(subtitle, 14, 24);
+  doc.setFontSize(9);
+  doc.text(subtitle, 14, 22);
 };
 
 const drawSectionTitle = (doc: any, text: string, y: number) => {
@@ -133,26 +133,27 @@ export const generateGlobalReportPdf = async (snapshot: Snapshot) => {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Header
-  drawHeader(doc, 'Reporte Global - Sistema de Rescate Animal', `Generado: ${snapshot.fechaGeneracion}  •  Periodo: ${snapshot.periodo}`);
+  drawHeader(doc, 'Reporte global', `Generado: ${snapshot.fechaGeneracion} • Periodo: ${snapshot.periodo}`);
 
   let y = 36;
   drawSectionTitle(doc, 'Resumen General', y);
   y += 6;
 
-  // KPI grid (2 columns x 4 rows)
+  // KPI grid (2 columns x 4 rows) - single neutral accent
   const cols = 2;
   const cardW = (pageWidth - 28 - 8) / cols; // margins 14/14, gap 8
   const cardH = 26;
   const gap = 8;
+  const neutralAccent: [number, number, number] = [203, 213, 225]; // slate-300
   const cards: Array<{ t: string; v: string; c: [number, number, number] }> = [
-    { t: 'Total de animales', v: String(snapshot.totalAnimalesRegistrados), c: [59, 130, 246] }, // blue-500
-    { t: 'Con evaluaciones', v: String(snapshot.animalesEnTratamiento), c: [99, 102, 241] }, // indigo-500
-    { t: 'Salud OK', v: String(snapshot.animalesSaludOk), c: [16, 185, 129] }, // emerald-500
-    { t: 'Salud NO OK', v: String(snapshot.animalesSaludNoOk), c: [239, 68, 68] }, // red-500
-    { t: 'Domésticos', v: String(snapshot.tipoDomestico), c: [234, 179, 8] }, // yellow-500
-    { t: 'Silvestres', v: String(snapshot.tipoSilvestre), c: [249, 115, 22] }, // orange-500
-    { t: 'Rescatistas', v: String(snapshot.rescuerCount), c: [20, 184, 166] }, // teal-500
-    { t: 'Veterinarios', v: String(snapshot.veterinarianCount), c: [168, 85, 247] }, // purple-500
+    { t: 'Total de animales', v: String(snapshot.totalAnimalesRegistrados), c: neutralAccent },
+    { t: 'Con evaluaciones', v: String(snapshot.animalesEnTratamiento), c: neutralAccent },
+    { t: 'Salud OK', v: String(snapshot.animalesSaludOk), c: neutralAccent },
+    { t: 'Salud NO OK', v: String(snapshot.animalesSaludNoOk), c: neutralAccent },
+    { t: 'Domésticos', v: String(snapshot.tipoDomestico), c: neutralAccent },
+    { t: 'Silvestres', v: String(snapshot.tipoSilvestre), c: neutralAccent },
+    { t: 'Rescatistas', v: String(snapshot.rescuerCount), c: neutralAccent },
+    { t: 'Veterinarios', v: String(snapshot.veterinarianCount), c: neutralAccent },
   ];
 
   let cx = 14;
@@ -166,9 +167,10 @@ export const generateGlobalReportPdf = async (snapshot: Snapshot) => {
 
   // Monthly series
   y += 6;
-  drawSectionTitle(doc, 'Serie de rescates - últimos 6 meses', y);
+  drawSectionTitle(doc, 'Serie de rescates (últimos 6 meses)', y);
   y += 4;
-  drawBarChart(doc, 14, y, pageWidth - 28, 48, snapshot.seriesMensual.labels, snapshot.seriesMensual.valores, [59, 130, 246]);
+  // Neutral bars
+  drawBarChart(doc, 14, y, pageWidth - 28, 48, snapshot.seriesMensual.labels, snapshot.seriesMensual.valores, [148, 163, 184]); // slate-400
   y += 56;
 
   // Footer note

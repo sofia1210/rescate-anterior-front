@@ -126,7 +126,7 @@ export const Reports = (): JSX.Element => {
         veterinarianCount: metrics.veterinarianCount,
       } as const;
 
-      // Descargar PDF estilizado
+      // Descargar PDF estilizado y CSV en segundo plano si el usuario lo solicita luego
       (async () => {
         try { await generateGlobalReportPdf(snapshot); } catch {}
       })();
@@ -147,14 +147,27 @@ export const Reports = (): JSX.Element => {
        
       />
 
-      <div className="container mx-auto p-4">
-        <div className="mb-6">
-          <h2 className=" text-xl font-semibold">Reportes Automáticos</h2>
+      <div className="container mx-auto p-3 lg:p-4">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Tablero de reportes</h2>
+            <p className="text-sm text-gray-600">Periodo: {metrics.periodo}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={handleSaveReport}
+              disabled={isSaving || loading}
+              className="bg-green-600 text-white hover:bg-green-700 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? "Generando PDF..." : "Exportar PDF"}
+            </Button>
+            
+          </div>
         </div>
 
         <div className={getThemeClasses(
-          "bg-white rounded-lg p-6 shadow-lg",
-          "bg-white rounded-lg p-6 shadow-lg shadow-green-200/50 border border-green-100"
+          "bg-white rounded-lg p-4 shadow",
+          "bg-white rounded-lg p-4 shadow-lg shadow-green-200/50 border border-green-100"
         )}>
           {loading ? (
             <div className="h-40 flex items-center justify-center text-gray-600">
@@ -168,84 +181,116 @@ export const Reports = (): JSX.Element => {
             <div className="text-red-600">{error}</div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="flex flex-col">
-                  <h3 className="text-lg font-semibold mb-4">Resumen de animales</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-green-50 rounded p-3">
-                      <div className="text-sm text-gray-600">Últimos 6 meses</div>
-                      <div className="text-2xl font-bold">{metrics.byMonthCounts.reduce((a, b) => a + b, 0)}</div>
-                    </div>
-                    <div className="bg-green-50 rounded p-3">
-                      <div className="text-sm text-gray-600">Mes con más rescates</div>
-                      <div className="text-2xl font-bold">
-                        {(() => {
-                          const idx = metrics.byMonthCounts.indexOf(Math.max(...metrics.byMonthCounts));
-                          return idx >= 0 ? (metrics.byMonthLabels[idx] || '-') : '-';
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 text-sm text-gray-600">Periodo: {metrics.periodo}</div>
+              {/* KPIs */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Animales</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.totalAnimales}</div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Total de animales registrados</h4>
-                    <div className="text-3xl font-bold mb-2">{metrics.totalAnimales}</div>
-                    <div className="h-8 bg-blue-100 rounded">
-                      <div className="h-full bg-blue-500 rounded" style={{ width: "100%" }}></div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Animales con evaluaciones médicas</h4>
-                    <div className="text-3xl font-bold mb-2">{metrics.animalesConEvaluaciones}</div>
-                    <div className="h-8 bg-blue-100 rounded">
-                      <div className="h-full bg-blue-500 rounded" style={{ width: `${metrics.totalAnimales ? Math.round((metrics.animalesConEvaluaciones / metrics.totalAnimales) * 100) : 0}%` }}></div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Animales con salud OK</h4>
-                    <div className="text-3xl font-bold mb-2">{metrics.animalesSaludOk}</div>
-                    <div className="h-8 bg-blue-100 rounded">
-                      <div className="h-full bg-green-500 rounded" style={{ width: `${metrics.totalAnimales ? Math.round((metrics.animalesSaludOk / metrics.totalAnimales) * 100) : 0}%` }}></div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Animales salud NO OK</h4>
-                    <div className="text-3xl font-bold mb-2">{metrics.animalesSaludNoOk}</div>
-                    <div className="h-8 bg-blue-100 rounded">
-                      <div className="h-full bg-red-500 rounded" style={{ width: `${metrics.totalAnimales ? Math.round((metrics.animalesSaludNoOk / metrics.totalAnimales) * 100) : 0}%` }}></div>
-                    </div>
-                  </div>
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Con evaluaciones</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.animalesConEvaluaciones}</div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Salud OK</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.animalesSaludOk}</div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Salud NO OK</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.animalesSaludNoOk}</div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Domésticos</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.tipoDomestico}</div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Silvestres</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.tipoSilvestre}</div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Rescatistas</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.rescuerCount}</div>
+                </div>
+                <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="text-xs text-gray-600 mb-1">Veterinarios</div>
+                  <div className="text-2xl font-bold text-gray-900">{metrics.veterinarianCount}</div>
                 </div>
               </div>
+
+              {/* Main sections: 2 columns in one row on desktop */}
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <section className="lg:col-span-6">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Rescates últimos 6 meses</h3>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-end gap-2 h-24">
+                      {metrics.byMonthLabels.map((lab, i) => {
+                        const val = metrics.byMonthCounts[i] || 0;
+                        const height = metrics.byMonthMax ? Math.max(4, Math.round((val / metrics.byMonthMax) * 90)) : 4;
+                        return (
+                          <div key={i} className="flex flex-col items-center justify-end text-xs text-gray-600">
+                            <div className="w-7 bg-green-500/80 rounded-t" style={{ height }} aria-label={`${lab}: ${val}`}></div>
+                            <span className="mt-1">{lab}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600">Total: {metrics.byMonthCounts.reduce((a, b) => a + b, 0)}</div>
+                  </div>
+                </section>
+
+                <section className="lg:col-span-6">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Especies más registradas</h3>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <ul className="space-y-2">
+                      {metrics.especiesTop.map(([name, count]) => {
+                        const pct = metrics.totalAnimales ? Math.round((count / metrics.totalAnimales) * 100) : 0;
+                        return (
+                          <li key={name} className="text-sm">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-gray-700 truncate mr-2" title={name}>{name}</span>
+                              <span className="text-gray-500">{count}</span>
+                            </div>
+                            <div className="h-2 bg-white rounded">
+                              <div className="h-2 bg-blue-500 rounded" style={{ width: `${pct}%` }}></div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                      {metrics.especiesTop.length === 0 && (
+                        <li className="text-gray-500 text-sm">Sin datos</li>
+                      )}
+                    </ul>
+                  </div>
+                </section>
+              </div>
+
+              {/* Health section full width below */}
+              <section className="mt-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Estado de salud</h3>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="h-3 bg-white rounded overflow-hidden flex">
+                    {(() => {
+                      const total = Math.max(1, metrics.totalAnimales);
+                      const okPct = Math.round((metrics.animalesSaludOk / total) * 100);
+                      const nokPct = Math.max(0, 100 - okPct);
+                      return (
+                        <>
+                          <div className="bg-emerald-500" style={{ width: `${okPct}%` }} title={`OK ${okPct}%`}></div>
+                          <div className="bg-red-500" style={{ width: `${nokPct}%` }} title={`No OK ${nokPct}%`}></div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs text-gray-600">
+                    <span>OK: {metrics.animalesSaludOk}</span>
+                    <span>No OK: {metrics.animalesSaludNoOk}</span>
+                  </div>
+                </div>
+              </section>
             </>
           )}
         </div>
 
-          <div className="mt-8 flex justify-center">
-            <Button 
-              onClick={handleSaveReport}
-              disabled={isSaving}
-              className="bg-green-500 text-white hover:bg-green-600 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? (
-                <div className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  GUARDANDO...
-                </div>
-              ) : (
-                "GUARDAR REPORTES"
-              )}
-            </Button>
-          </div>
 
           {/* Mensaje de confirmación */}
           {reportSaved && (

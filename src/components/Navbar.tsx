@@ -15,10 +15,10 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
   const { getThemeClasses } = useThemeClasses();
 
   const navigationItems = [
-    {
+    /*{
       path: "/home",
       label: "Inicio"
-    },
+    },*/
     {
       path: "/reports",
       label: "Reportes"

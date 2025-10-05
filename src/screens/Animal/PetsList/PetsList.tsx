@@ -89,10 +89,11 @@ export const PetsList = (): JSX.Element => {
       });
   }, [pets, query, typeChoice, healthChoice]);
 
-  const handleAddRescuerSuccess = (_: { id: number | string; fechaRescate: string; nombre?: string; telefono?: string }) => {
+  const handleAddRescuerSuccess = (created: { id: number | string; fechaRescate: string; nombre?: string; telefono?: string }) => {
+    // Cerrar modal de rescatista y volver al selector con la lista actualizada
     setShowAddRescuer(false);
-    navigate("/pets");
-    window.location.reload();
+    setRescuerSearch(created?.nombre || created?.telefono || "");
+    setShowRescuerPicker(true);
   };
 
   return (
@@ -137,9 +138,9 @@ export const PetsList = (): JSX.Element => {
         )}
       </div>
 
-      {/* Filtros: Tipo y Estado en la misma fila (izquierda) */}
+      {/* Filtros + acción registrar */}
       <div className="container mx-auto p-4 pt-0">
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
+        <div className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-800">Tipo:</span>
             {[{key:"todos",label:"Todos"},{key:"domestico",label:"Doméstico"},{key:"silvestre",label:"Silvestre"}].map(opt => (
@@ -163,6 +164,15 @@ export const PetsList = (): JSX.Element => {
                 {key[0].toUpperCase()+key.slice(1)}
               </button>
             ))}
+          </div>
+          <div className="flex-1 md:flex-none" />
+          <div>
+            <Button
+              className="bg-green-600 text-white hover:bg-green-700"
+              onClick={() => setShowRescuerPicker(true)}
+            >
+              Registrar Animal
+            </Button>
           </div>
         </div>
       </div>
@@ -281,20 +291,7 @@ export const PetsList = (): JSX.Element => {
         )}
       </div>
 
-      {/* Botón Flotante para Añadir Animal (selector de rescatista) */}
-      <div className="fixed bottom-8 right-8">
-        <button
-          onClick={() => setShowRescuerPicker(true)}
-          className="w-14 h-14 text-white rounded-full shadow-lg bg-green-500 hover:bg-green-600 flex items-center justify-center"
-          title="Agregar Animal"
-          aria-label="Agregar Animal"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-        </button>
-        
-      </div>
+      {/* Floating button eliminado (reemplazado por botón normal arriba) */}
 
 
       {/* Modals */}

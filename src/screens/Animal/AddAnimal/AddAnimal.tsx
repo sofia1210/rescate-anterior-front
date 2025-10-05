@@ -132,17 +132,20 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
+  // Helper: capitaliza cada palabra
+  const toTitle = (s: string) => s.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
   // Mapea los datos del formulario al formato requerido
   const animalData: Record<string, any> = {
-    nombre: formData.nombre,
-    especie: formData.especie,
-    raza: formData.raza,
-    sexo: formData.sexo,
+    nombre: toTitle(formData.nombre.trim()),
+    especie: toTitle(formData.especie.trim()),
+    raza: formData.raza ? toTitle(formData.raza.trim()) : "",
+    sexo: toTitle(formData.sexo.trim()),
     edad: 3, // Puedes agregar un campo de edad en el formulario si lo necesitas
-    estadoSalud: formData.estadoSalud,
-    tipoAlimentacion: formData.tipoAlimentacion,
-    cantidadRecomendada: formData.cantidadRecomendada,
-    frecuenciaRecomendada: formData.frecuenciaRecomendada,
+    estadoSalud: toTitle(formData.estadoSalud.trim()),
+    tipoAlimentacion: toTitle(formData.tipoAlimentacion.trim()),
+    cantidadRecomendada: formData.cantidadRecomendada.trim(),
+    frecuenciaRecomendada: toTitle(formData.frecuenciaRecomendada.trim()),
     // Backend espera valores capitalizados según ejemplo ("Doméstico"|"Silvestre")
     tipo: formData.tipo === "doméstico" ? "Doméstico" : "Silvestre",
     // Vincular con el rescatista seleccionado
@@ -151,8 +154,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     detallesRescate: "Encontrado en parque", // Puedes obtenerlo del formulario
     latitud: parseFloat(formData.latitud),
     longitud: parseFloat(formData.longitud),
-    descripcion: formData.ubicacionRescate,
-    ubicacionRescate: formData.ubicacionRescate,
+    descripcion: formData.ubicacionRescate ? toTitle(formData.ubicacionRescate.trim()) : "",
+    ubicacionRescate: formData.ubicacionRescate ? toTitle(formData.ubicacionRescate.trim()) : "",
   };
   // Nota: evitamos enviar objeto rescatista anidado; el backend puede resolverlo por rescatista_id
   // Compatibilidad: algunos endpoints esperan los campos del rescatista por nombre/teléfono/fecha
@@ -261,14 +264,11 @@ const handleSubmit = async (e: React.FormEvent) => {
               }
               options={["doméstico", "silvestre"]}
             />
-            <InputField
+            <DropdownField
               label="Especie"
               value={formData.especie}
               onChange={(v) => setFormData({ ...formData, especie: v })}
-              pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
-              minLength={2}
-              maxLength={60}
-              autoComplete="off"
+              options={["Felino", "Canino", "Ave", "Reptil", "Roedor", "Marsupial", "Anfibio", "Otro"]}
             />
             <InputField
               label="Raza"
@@ -297,7 +297,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               onChange={(v) =>
                 setFormData({ ...formData, tipoAlimentacion: v })
               }
-              options={["carnivoro", "herviboro", "insectivoro", "omnivoro"]}
+              options={["Carnívoro", "Herbívoro", "Insectívoro", "Omnívoro"]}
             />
             <DropdownField
               label="Cantidad Recomendada"
@@ -305,7 +305,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               onChange={(v) =>
                 setFormData({ ...formData, cantidadRecomendada: v })
               }
-              options={["diaria", "semanal", "mensual"]}
+              options={["100 g", "250 g", "500 g", "1 kg", "2 kg"]}
             />
             <DropdownField
               label="Frecuencia Recomendada"
@@ -313,7 +313,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               onChange={(v) =>
                 setFormData({ ...formData, frecuenciaRecomendada: v })
               }
-              options={["1kg", "2kg", "3kg", "4kg"]}
+              options={["Diaria", "Semanal", "Mensual"]}
             />
             <div>
               <label className="block text-sm font-medium mb-1">

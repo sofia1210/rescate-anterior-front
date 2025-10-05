@@ -129,7 +129,7 @@ export const Geolocation = (): JSX.Element => {
 
       <div className="container mx-auto p-4">
         <div className="mb-6">
-          <h2 className="text-white text-xl font-semibold">Ubicación del Animal</h2>
+          <h2 className="text-xl font-semibold">Ubicación del Animal</h2>
         </div>
 
         <div className={getThemeClasses(
