@@ -89,15 +89,17 @@ export const Login = (): JSX.Element => {
         "flex flex-col justify-center w-full md:w-1/2 p-8 rounded-r-3xl bg-gradient-to-br from-green-600 to-green-700"
       )}>
         <div className="max-w-md mx-auto w-full">
-          <div className="flex justify-center mb-8">
-            <img src="/imagenes/Patota.png" alt="Logo" className="w-24 h-24" />
+          <div className="text-center mb-8">
+            <img src="/imagenes/Patota.png" alt="Logo" className="w-24 h-24 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">RedSilvestre</h1>
+            <p className="text-white/80 text-sm font-medium tracking-wide">Tu red de rescate animal</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4" noValidate>
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm text-white mb-1"
+                className="block text-sm font-medium text-white mb-1 tracking-wide"
               >
                 Correo electrónico
               </label>
@@ -147,7 +149,7 @@ export const Login = (): JSX.Element => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm text-white mb-1"
+                className="block text-sm font-medium text-white mb-1 tracking-wide"
               >
                 Contraseña
               </label>
@@ -183,14 +185,14 @@ export const Login = (): JSX.Element => {
 
             <Button
               type="submit"
-              className="w-full bg-white text-green-700 hover:bg-white/90 mt-6"
+              className="w-full bg-white text-green-700 hover:bg-white/90 mt-6 font-semibold tracking-wide"
             >
               INICIAR SESIÓN
             </Button>
 
-            <p className="text-center text-white mt-4">
+            <p className="text-center text-white mt-4 font-medium">
               ¿No tienes una cuenta?{" "}
-              <Link to="/registro" className="underline">
+              <Link to="/registro" className="underline font-semibold">
                 Regístrate aquí
               </Link>
             </p>
@@ -198,12 +200,9 @@ export const Login = (): JSX.Element => {
         </div>
       </div>
 
-      <div className={getThemeClasses(
-        "hidden md:block md:w-1/2 bg-green-400/80 relative",
-        "hidden md:block md:w-1/2 bg-green-100 relative"
-      )} />
+     
       
-      {/* Notificación */}
+      {/* Notification component stays the same */}
       {notification && (
         <Notification
           type={notification.type}

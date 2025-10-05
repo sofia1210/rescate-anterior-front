@@ -164,7 +164,6 @@ export const Register = (): JSX.Element => {
       return;
     }
 
-    // ✅ Conexión al backend
     try {
       await registerUser({
         username: trimmedUsername,
@@ -179,7 +178,6 @@ export const Register = (): JSX.Element => {
         message: '¡Usuario registrado con éxito!'
       });
       
-      // Navegar después de un breve delay para que se vea la notificación
       setTimeout(() => {
         navigate("/");
       }, 1500);
@@ -201,8 +199,19 @@ export const Register = (): JSX.Element => {
         "flex flex-col justify-start w-full md:w-1/2 p-8 md:p-12 rounded-r-3xl bg-gradient-to-br from-green-600 to-green-700"
       )}>
         <div className="max-w-md mx-auto w-full">
-          <h1 className="text-2xl font-medium text-white mb-6">Crear una cuenta</h1>
+          <div className="text-center mb-8">
+            <img src="/imagenes/Patota.png" alt="Logo" className="w-24 h-24 mx-auto mb-4" />
+                        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">RedSilvestre</h1>
 
+            <p className="text-white/80 text-sm font-medium tracking-wide mb-6">
+              Tu red de rescate animal
+            </p>
+            <h2 className="text-xl font-medium text-white tracking-wide">
+              Crear una cuenta
+            </h2>
+          </div>
+
+          {/* El resto del formulario continúa igual */}
           <form onSubmit={handleRegister} className="space-y-4" noValidate>
             <div>
               <label htmlFor="username" className="block text-sm text-white mb-1">
@@ -251,7 +260,6 @@ export const Register = (): JSX.Element => {
                   setEmail(v);
                 }}
                 onKeyDown={(e) => {
-                  // Evitar espacios y caracteres no permitidos al escribir
                   if (e.key === " ") { e.preventDefault(); return; }
                   if (e.key.length === 1) {
                     const allowed = /[a-zA-Z0-9._%+\-@]/;
