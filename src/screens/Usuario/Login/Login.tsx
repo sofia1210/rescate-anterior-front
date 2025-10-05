@@ -15,34 +15,49 @@ export const Login = (): JSX.Element => {
     type: 'success' | 'error' | 'info';
     message: string;
   } | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  const stripEmojis = (value: string): string => {
+    try {
+      return value.replace(/\p{Extended_Pictographic}/gu, "");
+    } catch {
+      return value.replace(/[\uD800-\uDFFF]|\uFE0F/gu, "");
+    }
+  };
+
+  const sanitizeEmail = (value: string): string => {
+    const noEmojiNoSpace = stripEmojis(value).replace(/\s+/g, "");
+    return noEmojiNoSpace.replace(/[^a-zA-Z0-9._%+\-@]/g, "");
+  };
+
+  const emailRegex = /^[a-zA-Z0-9._%+\-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,}$/;
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
+    let hasError = false;
 
-    const emailInput = form.username as HTMLInputElement;
-    const passwordInput = form.password as HTMLInputElement;
-
-    if (!emailInput.value.trim()) {
-      emailInput.setCustomValidity("El nombre de usuario es obligatorio.");
-      emailInput.reportValidity();
-      return;
-    } else {
-      emailInput.setCustomValidity("");
+    if (!emailRegex.test(email)) {
+      setEmailError("Correo electrónico inválido. Ingrese un correo con formato válido.");
+      hasError = true;
     }
 
-    if (!passwordInput.value.trim()) {
-      passwordInput.setCustomValidity("La contraseña es obligatoria.");
-      passwordInput.reportValidity();
-      return;
-    } else {
-      passwordInput.setCustomValidity("");
+    if (!password.trim()) {
+      setPasswordError("La contraseña es obligatoria.");
+      hasError = true;
+    } else if (password.length < 12 || password.length > 64) {
+      setPasswordError("La contraseña debe tener entre 12 y 64 caracteres.");
+      hasError = true;
     }
+
+    if (hasError) return;
 
     try {
       const res = await loginUser({
-        email: emailInput.value,
-        password: passwordInput.value,
+        email,
+        password,
       });
 
       // Guardar token en localStorage
@@ -84,7 +99,7 @@ export const Login = (): JSX.Element => {
                 htmlFor="username"
                 className="block text-sm text-white mb-1"
               >
-                Email:
+                Correo electrónico
               </label>
               <Input
                 id="username"
@@ -93,10 +108,40 @@ export const Login = (): JSX.Element => {
                 inputMode="email"
                 autoComplete="email"
                 required
-                pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-                className="bg-transparent border-white/30 text-white placeholder:text-white/50"
-                placeholder="Ingresa tu correo"
+                pattern="^[a-zA-Z0-9._%+\-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,}$"
+                value={email}
+                onChange={(e) => {
+                  const v = sanitizeEmail(e.target.value);
+                  if (emailError) setEmailError("");
+                  setEmail(v);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === " ") { e.preventDefault(); return; }
+                  if (e.key.length === 1) {
+                    const allowed = /[a-zA-Z0-9._%+\-@]/;
+                    if (!allowed.test(e.key)) { e.preventDefault(); }
+                  }
+                }}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData('text');
+                  const sanitized = sanitizeEmail(text);
+                  e.preventDefault();
+                  const target = e.target as HTMLInputElement;
+                  const start = target.selectionStart ?? target.value.length;
+                  const end = target.selectionEnd ?? target.value.length;
+                  const next = target.value.slice(0, start) + sanitized + target.value.slice(end);
+                  if (emailError) setEmailError("");
+                  setEmail(next);
+                }}
+                className={`bg-transparent border-white/30 text-white placeholder:text-white/50 ${emailError ? 'border-amber-400 focus-visible:ring-amber-400' : ''}`}
+                placeholder="ej. emilia.rodriguez@correo.com"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
+              {emailError && (
+                <p className="mt-1 text-sm text-amber-200" role="alert" aria-live="polite">{emailError}</p>
+              )}
             </div>
 
             <div>
@@ -104,7 +149,7 @@ export const Login = (): JSX.Element => {
                 htmlFor="password"
                 className="block text-sm text-white mb-1"
               >
-                Contraseña:
+                Contraseña
               </label>
               <div className="relative">
                 <Input
@@ -112,10 +157,16 @@ export const Login = (): JSX.Element => {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  minLength={8}
+                  minLength={12}
+                  maxLength={64}
                   required
-                  className="bg-transparent border-white/30 text-white placeholder:text-white/50 pr-10"
-                  placeholder="Ingresa tu contraseña"
+                  value={password}
+                  onChange={(e) => {
+                    if (passwordError) setPasswordError("");
+                    setPassword(e.target.value);
+                  }}
+                  className={`bg-transparent border-white/30 text-white placeholder:text-white/50 pr-10 ${passwordError ? 'border-amber-400 focus-visible:ring-amber-400' : ''}`}
+                  placeholder="Mín. 12, mayúscula, minúscula y número"
                 />
                 <button
                   type="button"
@@ -125,6 +176,9 @@ export const Login = (): JSX.Element => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              {passwordError && (
+                <p className="mt-1 text-sm text-amber-200" role="alert" aria-live="polite">{passwordError}</p>
+              )}
             </div>
 
             <Button
