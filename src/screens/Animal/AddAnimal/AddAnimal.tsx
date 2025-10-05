@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
+// import { Input } from "../../../components/ui/input";
 import { FormFieldWithError } from "../../../components/ui/form-field-with-error";
 // import { Breadcrumbs } from "../../../components/ui/breadcrumbs";
 import { Notification } from "../../../components/ui/notification";
@@ -190,6 +190,49 @@ export const AddAnimal = ({
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setSubmitted(true);
+  // Validaciones de campos obligatorios (evita tooltips nativos y muestra inline)
+  const nameRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$/;
+  const textRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$/;
+
+  const invalidFields = [
+    !nameRegex.test(String(formData.nombre || "")),
+    !String(formData.tipo || "").trim(),
+    !String(formData.especie || "").trim(),
+    !textRegex.test(String(formData.raza || "")),
+    !String(formData.sexo || "").trim(),
+    !String(formData.estadoSalud || "").trim(),
+    !String(formData.tipoAlimentacion || "").trim(),
+    !String(formData.cantidadRecomendada || "").trim(),
+    !String(formData.frecuenciaRecomendada || "").trim(),
+    !String(formData.fechaRescate || "").trim(),
+    !(String(formData.ubicacionRescate || "").trim().length >= 3),
+  ].some(Boolean);
+
+  if (invalidFields) {
+    // Desplazar y enfocar el primer campo inválido dentro del modal
+    // Try inputs first (built with FormFieldWithError - ids are slugified labels)
+    const inputIds = [
+      'field-nombre',
+      'field-raza',
+      'field-fecha-de-rescate',
+      'field-ubicación-del-rescate',
+    ];
+    let target: HTMLElement | null = null;
+    for (const id of inputIds) {
+      const el = document.getElementById(id);
+      if (el && el.getAttribute('aria-invalid') === 'true') { target = el as HTMLElement; break; }
+    }
+    // If not found, check selects showing amber error (data-invalid set below)
+    if (!target) {
+      const firstInvalidSelect = document.querySelector('select[data-invalid="true"]') as HTMLElement | null;
+      if (firstInvalidSelect) target = firstInvalidSelect;
+    }
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      try { (target as HTMLInputElement).focus(); } catch {}
+    }
+    return;
+  }
   // Validación simple: lat/long deben existir
   if (!formData.latitud || !formData.longitud) {
     setNotification({ type: 'error', message: 'Selecciona la ubicación en el mapa o usa tu ubicación.' });
@@ -304,6 +347,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           <form
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 gap-8 px-8 py-6"
+            noValidate
           >
           <div className="space-y-4">
             <FormFieldWithError
@@ -338,7 +382,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               forceValidate={submitted}
             />
             <FormFieldWithError
-              label="Raza *"
+              label="Raza "
               value={formData.raza}
               onChange={(v) => setFormData({ ...formData, raza: v })}
               pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
@@ -395,21 +439,15 @@ const handleSubmit = async (e: React.FormEvent) => {
               required
               forceValidate={submitted}
             />
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Fecha de Rescate *
-              </label>
-              <Input
-                type="date"
-                value={formData.fechaRescate}
-                max={today}
-                onChange={(e) =>
-                  setFormData({ ...formData, fechaRescate: e.target.value })
-                }
-                className="w-full"
-                required
-              />
-            </div>
+            <FormFieldWithError
+              label="Fecha de Rescate"
+              value={formData.fechaRescate}
+              onChange={(v) => setFormData({ ...formData, fechaRescate: v })}
+              type="date"
+              required
+              max={today}
+              forceValidate={submitted}
+            />
             <FormFieldWithError
               label="Ubicación del Rescate"
               value={formData.ubicacionRescate}
@@ -449,7 +487,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Foto del Animal (opcional):</label>
+              <label className="block text-sm font-medium mb-1">Foto del Animal</label>
               <input
                 type="file"
                 accept="image/png, image/jpeg, image/jpg"
@@ -480,7 +518,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 type="submit"
                 className="bg-green-600 text-white hover:bg-green-700 px-8"
               >
-                {isEditing ? "GUARDAR CAMBIOS" : "AGREGAR ANIMAL"}
+                {isEditing ? "Guardar Cambios" : "Agregar Animal"}
               </Button>
             </div>
           </form>
@@ -560,6 +598,7 @@ const DropdownField = ({
         className={`w-full border rounded px-3 py-2 ${showError ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-400' : ''}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        data-invalid={showError ? 'true' : undefined}
       >
         <option value="">Selecciona una opción</option>
         {options.map((opt) => (

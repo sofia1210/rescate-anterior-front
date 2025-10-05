@@ -12,6 +12,8 @@ interface FormFieldWithErrorProps {
   pattern?: string;
   minLength?: number;
   maxLength?: number;
+  min?: string;
+  max?: string;
   autoComplete?: string;
   className?: string;
   inputMode?: "text" | "search" | "email" | "tel" | "url" | "none" | "numeric" | "decimal";
@@ -29,6 +31,8 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
   pattern,
   minLength,
   maxLength,
+  min,
+  max,
   autoComplete,
   className = "w-full",
   inputMode,
@@ -38,6 +42,15 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
   // const { getThemeClasses } = useThemeClasses();
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [shouldValidate, setShouldValidate] = useState(false);
+  const slug = React.useMemo(
+    () =>
+      String(label)
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9_-]/gi, ""),
+    [label]
+  );
 
   useEffect(() => {
     if (!shouldValidate) return;
@@ -75,11 +88,11 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
 
   return (
     <div className="space-y-1">
-      <label htmlFor={`field-${label}`} className="block text-sm font-medium mb-1">
+      <label htmlFor={`field-${slug}`} className="block text-sm font-medium mb-1">
         {label} {required && <span className="text-current">*</span>}
       </label>
       <Input
-        id={`field-${label}`}
+        id={`field-${slug}`}
         type={type}
         value={value}
         onChange={handleChange}
@@ -88,16 +101,19 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
         pattern={pattern}
         minLength={minLength}
         maxLength={maxLength}
+      min={min}
+      max={max}
         autoComplete={autoComplete}
         inputMode={inputMode}
-        className={`${className} ${errorMessage ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+        className={`${className} ${errorMessage ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-400' : ''}`}
         required={required}
-        aria-describedby={errorMessage ? `error-${label}` : undefined}
+        aria-describedby={errorMessage ? `error-${slug}` : undefined}
+        aria-invalid={errorMessage ? true : undefined}
       />
       {errorMessage && (
         <div 
-          id={`error-${label}`}
-          className="text-red-600 text-sm"
+          id={`error-${slug}`}
+          className="text-amber-600 text-sm"
           role="alert"
           aria-live="polite"
         >
