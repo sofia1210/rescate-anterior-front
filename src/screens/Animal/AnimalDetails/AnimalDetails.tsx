@@ -321,7 +321,8 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
           </div>
 
           {/* Content area */}
-          <div className="overflow-y-auto h-full px-8 py-6">
+          <div className="overflow-y-auto max-h-[65vh] px-8 py-6">
+
             {activeTab === 'Información General' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Columna izquierda con información */}
@@ -710,7 +711,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
 
         {/* Rescuer Modal */}
         {showRescuerModal && animal.rescuer && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] p-4 overflow-y-auto">
             <div className={getThemeClasses(
               "bg-white rounded-lg w-full max-w-md p-6 shadow-2xl",
               "bg-white rounded-lg w-full max-w-md p-6 shadow-2xl border border-green-200"
