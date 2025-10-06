@@ -82,130 +82,143 @@ export const EditAnimalStatus = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">Cambiar Estado de Salud</h2>
-            <p className="text-sm text-gray-600 mt-1">{animal.name}</p>
+ return (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden">
+      
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-100 to-emerald-100 border-b border-green-200 px-8 py-6 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-200">
+              <svg className="w-6 h-6 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 21v-2a4 4 0 00-3-3.87M4 21v-2a4 4 0 013-3.87M12 7a4 4 0 110-8 4 4 0 010 8z" />
+              </svg>
+            </span>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Cambiar Estado de Salud</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                <span className="bg-white/80 px-2 py-1 rounded-full text-xs border border-green-200">
+                  {animal.name}
+                </span>
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 rounded-xl hover:bg-white/60 transition-all duration-200 ml-4"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="space-y-6">
-          {/* Current Status */}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+        {/* Current Status */}
+        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 flex items-center gap-4">
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100">
+            <svg className="w-6 h-6 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
               Estado de Salud Actual
             </label>
-            <div className={`px-3 py-2 rounded-lg border ${getStatusColor(currentStatus.type)}`}>
-              {currentStatus.label}
+            <div className={`px-4 py-2 rounded-lg border-2 font-medium ${getStatusColor(currentStatus.type)}`}>
+              <span className="text-current">{currentStatus.label}</span>
             </div>
           </div>
-
-          {/* New Status Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Nuevo Estado de Salud
-            </label>
-            <div className="space-y-3">
-              {statusOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedStatus === option.value
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setSelectedStatus(option.value)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      selectedStatus === option.value
-                        ? 'border-green-500 bg-green-500'
-                        : 'border-gray-300'
-                    }`}>
-                      {selectedStatus === option.value && (
-                        <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-800">{option.label}</div>
-                      <div className="text-sm text-gray-600">{option.description}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-red-700 text-sm">{error}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Warning for status changes */}
-          {selectedStatus !== currentStatus.type && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-yellow-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <div>
-                  <div className="text-yellow-800 font-medium text-sm">Confirmar cambio de estado de salud</div>
-                  <div className="text-yellow-700 text-sm mt-1">
-                    Esta acción cambiará el estado de salud del animal de "{currentStatus.label}" a "{statusOptions.find(opt => opt.value === selectedStatus)?.label}". 
-                    Esta acción no se puede deshacer.
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 mt-6">
-          
-          <Button
-            onClick={handleStatusChange}
-            className={`flex-1 ${
-              selectedStatus === currentStatus.type
-                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700'
-            }`}
-            disabled={loading || selectedStatus === currentStatus.type}
-          >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Actualizando...
+        {/* New Status Selection */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Nuevo Estado de Salud
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {statusOptions.map((option) => (
+              <div
+                key={option.value}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
+                  selectedStatus === option.value
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 hover:border-green-300'
+                }`}
+                onClick={() => setSelectedStatus(option.value)}
+              >
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  selectedStatus === option.value
+                    ? 'border-green-500 bg-green-500'
+                    : 'border-gray-300'
+                }`}>
+                  {selectedStatus === option.value && (
+                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`w-3 h-3 rounded-full ${
+                      option.value === 'Muy Bueno' ? 'bg-green-500' :
+                      option.value === 'Bueno' ? 'bg-blue-500' :
+                      option.value === 'Estable' ? 'bg-yellow-500' :
+                      option.value === 'Malo' ? 'bg-orange-500' :
+                      'bg-red-500'
+                    }`}></span>
+                    <span className="font-semibold text-gray-900">{option.label}</span>
+                  </div>
+                  <span className="text-xs text-gray-600">{option.description}</span>
+                </div>
               </div>
-            ) : (
-              'Cambiar Estado de Salud'
-            )}
-          </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-red-800">{error}</span>
+          </div>
+        )}
+
+        {/* Warning Message */}
+        {selectedStatus !== currentStatus.type && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+            Confirmar cambio de estado de "<strong>{currentStatus.label}</strong>" a 
+            "<strong>{statusOptions.find(opt => opt.value === selectedStatus)?.label}</strong>"
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-gray-200 px-8 py-5 bg-gray-50 flex-shrink-0">
+        <div className="flex gap-4">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-white text-gray-700 border border-gray-300 rounded-xl py-3 hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleStatusChange}
+            disabled={loading || selectedStatus === currentStatus.type}
+            className={`flex-1 rounded-xl py-3 font-semibold ${
+              selectedStatus === currentStatus.type || loading
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-green-500 text-white hover:bg-green-600'
+            }`}
+          >
+            {loading ? 'Actualizando...' : 'Cambiar Estado'}
+          </button>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
+}
