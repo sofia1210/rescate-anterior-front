@@ -15,6 +15,7 @@ export const TransferHistory = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
   const layersRef = useRef<any>(null);
+  const routingControlRef = useRef<any>(null);
   const [rescuePoint, setRescuePoint] = useState<{ lat: number; lng: number; desc: string } | null>(null);
   const [events, setEvents] = useState<Array<{ lat: number; lng: number; fecha?: string; desc: string }>>([]);
   const [isAdoptedOrLiberated, setIsAdoptedOrLiberated] = useState(false);
@@ -223,7 +224,7 @@ export const TransferHistory = (): JSX.Element => {
       .filter(Boolean) as { id: string; lat: number; lng: number; descripcion?: string; fecha?: string }[]
   ), [geos]);
 
-  // Pintar mapa con Leaflet (global L desde CDN)
+  // Pintar mapa con Leaflet Routing Machine para rutas que sigan caminos
   useEffect(() => {
     const L: any = (window as any).L;
     if (!L) return;
@@ -243,47 +244,142 @@ export const TransferHistory = (): JSX.Element => {
       layersRef.current.clearLayers();
       mapRef.current.removeLayer(layersRef.current);
     }
+    
+    // Remover control de routing anterior si existe
+    if (routingControlRef.current) {
+      mapRef.current.removeControl(routingControlRef.current);
+      routingControlRef.current = null;
+    }
+    
     layersRef.current = L.layerGroup().addTo(mapRef.current);
 
     if (!points.length && !rescuePoint && !events.length) return;
 
-    const latlngs = points.map((p) => [p.lat, p.lng]);
-    // Polyline del recorrido
-    if (latlngs.length > 1) {
-      L.polyline(latlngs, { color: '#16a34a', weight: 3 }).addTo(layersRef.current);
+    // Crear waypoints para el routing
+    const waypoints: any[] = [];
+    
+    // Agregar punto de rescate como primer waypoint si existe
+    if (rescuePoint) {
+      waypoints.push(L.latLng(rescuePoint.lat, rescuePoint.lng));
     }
+    
+    // Agregar puntos de traslado en orden cronológico
+    points.forEach((p) => {
+      waypoints.push(L.latLng(p.lat, p.lng));
+    });
 
-    // Markers: puntos intermedios como círculos, último como marker destacado
-    points.forEach((p, idx) => {
-      const isLast = idx === points.length - 1;
-      const when = p.fecha ? new Date(p.fecha).toLocaleString() : '';
-      const popupHtml = `<div><div style="font-weight:600">${p.descripcion || 'Ubicación'}</div><div style="font-size:12px;color:#4b5563">${when}</div><div style="font-size:12px;color:#4b5563">Lat: ${p.lat.toFixed(5)} · Lng: ${p.lng.toFixed(5)}</div></div>`;
-      if (isLast) {
+    // Si hay más de un waypoint, crear ruta que siga los caminos
+    if (waypoints.length > 1) {
+      try {
+        // Crear control de routing con configuración personalizada
+        routingControlRef.current = L.Routing.control({
+          waypoints: waypoints,
+          routeWhileDragging: false,
+          addWaypoints: false,
+          createMarker: function(i: number, waypoint: any) {
+            // Crear marcadores personalizados
+            const isRescue = i === 0 && rescuePoint;
+            const isLastTransfer = i === waypoints.length - 1;
+            
+            let marker;
+            if (isRescue) {
+              // Marcador especial para punto de rescate
+              const icon = L.divIcon({
+                className: 'custom-rescue-marker',
+                html: '<div style="background-color: #16a34a; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+              });
+              marker = L.marker(waypoint.latLng, { icon });
+              marker.bindPopup(`<div><div style="font-weight:700;color:#166534">Lugar de rescate</div><div style="font-size:12px;color:#4b5563">${rescuePoint.desc || ''}</div></div>`);
+            } else if (isLastTransfer) {
+              // Marcador especial para último punto
+              const icon = L.icon({
+                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [30, 50],
+                iconAnchor: [15, 50],
+              });
+              marker = L.marker(waypoint.latLng, { icon });
+              const point = points[i - (rescuePoint ? 1 : 0)];
+              const when = point?.fecha ? new Date(point.fecha).toLocaleString() : '';
+              marker.bindPopup(`<div><div style="font-weight:600">${point?.descripcion || 'Ubicación'}</div><div style="font-size:12px;color:#4b5563">${when}</div><div style="font-size:12px;color:#4b5563">Lat: ${point?.lat.toFixed(5)} · Lng: ${point?.lng.toFixed(5)}</div></div>`);
+            } else {
+              // Marcadores intermedios como círculos
+              marker = L.circleMarker(waypoint.latLng, { 
+                radius: 6, 
+                color: '#16a34a', 
+                fillColor: '#16a34a', 
+                fillOpacity: 0.9 
+              });
+              const point = points[i - (rescuePoint ? 1 : 0)];
+              const when = point?.fecha ? new Date(point.fecha).toLocaleString() : '';
+              marker.bindPopup(`<div><div style="font-weight:600">${point?.descripcion || 'Ubicación'}</div><div style="font-size:12px;color:#4b5563">${when}</div><div style="font-size:12px;color:#4b5563">Lat: ${point?.lat.toFixed(5)} · Lng: ${point?.lng.toFixed(5)}</div></div>`);
+            }
+            return marker;
+          },
+          lineOptions: {
+            styles: [
+              { color: '#16a34a', weight: 4, opacity: 0.8 }
+            ]
+          },
+          show: false, // Ocultar el panel de instrucciones
+          collapsible: false
+        }).addTo(mapRef.current);
+
+        // Manejar eventos de routing
+        routingControlRef.current.on('routesfound', function(e: any) {
+          const routes = e.routes;
+          if (routes && routes.length > 0) {
+            console.log('Ruta calculada siguiendo caminos:', routes[0]);
+          }
+        });
+
+        routingControlRef.current.on('routingerror', function(e: any) {
+          console.warn('Error al calcular ruta:', e.error);
+          // Fallback a polyline recta si hay error
+          const latlngs = waypoints.map((wp: any) => [wp.lat, wp.lng]);
+          L.polyline(latlngs, { color: '#16a34a', weight: 3, dashArray: '5, 5' }).addTo(layersRef.current);
+        });
+
+      } catch (error) {
+        console.warn('Error al inicializar routing, usando polyline recta:', error);
+        // Fallback a polyline recta si hay error
+        const latlngs = waypoints.map((wp: any) => [wp.lat, wp.lng]);
+        L.polyline(latlngs, { color: '#16a34a', weight: 3, dashArray: '5, 5' }).addTo(layersRef.current);
+      }
+    } else if (waypoints.length === 1) {
+      // Solo un punto, mostrar marcador sin ruta
+      const wp = waypoints[0];
+      if (rescuePoint) {
+        const icon = L.divIcon({
+          className: 'custom-rescue-marker',
+          html: '<div style="background-color: #16a34a; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+        L.marker([wp.lat, wp.lng], { icon }).addTo(layersRef.current)
+          .bindPopup(`<div><div style="font-weight:700;color:#166534">Lugar de rescate</div><div style="font-size:12px;color:#4b5563">${rescuePoint.desc || ''}</div></div>`);
+      } else {
+        const point = points[0];
         const icon = L.icon({
           iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
           shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
           iconSize: [30, 50],
           iconAnchor: [15, 50],
         });
-        L.marker([p.lat, p.lng], { icon }).addTo(layersRef.current).bindPopup(popupHtml);
-      } else {
-        L.circleMarker([p.lat, p.lng], { radius: 6, color: '#16a34a', fillColor: '#16a34a', fillOpacity: 0.9 }).addTo(layersRef.current).bindPopup(popupHtml);
+        const when = point?.fecha ? new Date(point.fecha).toLocaleString() : '';
+        L.marker([wp.lat, wp.lng], { icon }).addTo(layersRef.current)
+          .bindPopup(`<div><div style="font-weight:600">${point?.descripcion || 'Ubicación'}</div><div style="font-size:12px;color:#4b5563">${when}</div><div style="font-size:12px;color:#4b5563">Lat: ${point?.lat.toFixed(5)} · Lng: ${point?.lng.toFixed(5)}</div></div>`);
       }
-    });
-
-    // Rescate: marker/círculo GRANDE en verde
-    if (rescuePoint) {
-      const popup = `<div><div style=\"font-weight:700;color:#166534\">Lugar de rescate</div><div style=\"font-size:12px;color:#4b5563\">${rescuePoint.desc || ''}</div></div>`;
-      L.circleMarker([rescuePoint.lat, rescuePoint.lng], { radius: 14, color: '#16a34a', fillColor: '#16a34a', fillOpacity: 1 })
-        .addTo(layersRef.current).bindPopup(popup);
     }
 
-    // Eventos
+    // Agregar eventos (adopciones/liberaciones) como marcadores especiales
     events.forEach(ev => {
       const color = /adop/i.test(ev.desc) ? '#3b82f6' : '#22c55e';
       const when = ev.fecha ? new Date(ev.fecha).toLocaleString() : '';
-      const popup = `<div><div style=\"font-weight:700\">${ev.desc}</div><div style=\"font-size:12px;color:#4b5563\">${when}</div></div>`;
-      L.circleMarker([ev.lat, ev.lng], { radius: 6, color, fillColor: color, fillOpacity: 0.9 })
+      const popup = `<div><div style="font-weight:700">${ev.desc}</div><div style="font-size:12px;color:#4b5563">${when}</div></div>`;
+      L.circleMarker([ev.lat, ev.lng], { radius: 8, color, fillColor: color, fillOpacity: 0.9 })
         .addTo(layersRef.current).bindPopup(popup);
     });
 
@@ -349,7 +445,9 @@ export const TransferHistory = (): JSX.Element => {
         {/* Solo mostrar título y botón superior si hay traslados */}
         {geos.length > 0 && (
           <div className="flex justify-between items-center pb-2">
-            <h2 className="text-xl font-semibold text-gray-600">Historial de Traslados</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-600">Historial de Traslados</h2>
+            </div>
             <Button 
               onClick={() => !isAdoptedOrLiberated && navigate(`/geolocation/${id}`)}
               className={isAdoptedOrLiberated 
