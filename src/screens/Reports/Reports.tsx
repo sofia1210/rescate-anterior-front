@@ -66,7 +66,7 @@ export const Reports = (): JSX.Element => {
       const key = (a.especie || "").toString().trim() || "(Sin especie)";
       especieMap.set(key, (especieMap.get(key) || 0) + 1);
     });
-    const especiesTop = Array.from(especieMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const especiesTop = Array.from(especieMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
     const fechas = animals
       .map((a: any) => a.fechaRescate)
       .filter(Boolean)
@@ -150,7 +150,7 @@ export const Reports = (): JSX.Element => {
       <div className="container mx-auto p-3 lg:p-4">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Tablero de reportes</h2>
+            <h2 className="text-xl font-semibold text-gray-600">Tablero de reportes</h2>
             <p className="text-sm text-gray-600">Periodo: {metrics.periodo}</p>
           </div>
           <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { useThemeClasses } from "../hooks/useThemeClasses";
+import { useAuthProtection } from "../hooks/useAuthProtection";
 
 interface NavbarProps {
   title: string;
@@ -13,6 +14,7 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { getThemeClasses } = useThemeClasses();
+  const { secureLogout } = useAuthProtection();
 
   const navigationItems = [
     /*{
@@ -34,8 +36,7 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/';
+    secureLogout();
   };
 
   const isActiveRoute = (path: string) => {
