@@ -71,6 +71,17 @@ export const PetsList = (): JSX.Element => {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
+  const filtersApplied = useMemo(() => {
+    return typeChoice !== 'todos' || healthChoice !== 'todos';
+  }, [typeChoice, healthChoice]);
+
+  const filterLabel = useMemo(() => {
+    const typeLabel = typeChoice === 'domestico' ? 'Doméstico' : (typeChoice === 'silvestre' ? 'Silvestre' : '');
+    const stateLabel = healthChoice !== 'todos' ? (healthChoice.charAt(0).toUpperCase() + healthChoice.slice(1)) : '';
+    const parts = [typeLabel, stateLabel ? `en estado ${stateLabel}` : ''].filter(Boolean);
+    return parts.join(' ');
+  }, [typeChoice, healthChoice]);
+
   // ⬇️ Filtrado por nombre + tipo + estado
   const filteredPets = useMemo(() => {
     const q = normalize(query.trim());
@@ -155,7 +166,7 @@ export const PetsList = (): JSX.Element => {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-800">Estado:</span>
-            {["todos","muy bueno","bueno","estable","sano","malo","muy malo"].map(key => (
+            {["todos","muy bueno","bueno","estable","malo","muy malo"].map(key => (
               <button
                 key={key}
                 onClick={() => setHealthChoice(key)}
@@ -252,15 +263,25 @@ export const PetsList = (): JSX.Element => {
               "w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6",
               "w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6"
             )}>
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              {filtersApplied ? (
+                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                </svg>
+              ) : (
+                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              )}
             </div>
             <h3 className={getThemeClasses(
               "text-xl font-semibold text-gray-600 mb-2",
               "text-xl font-semibold text-gray-700 mb-2"
             )}>
-              {error ? "No se pudieron cargar animales" : (query ? `No se encontraron animales para "${query}"` : "No hay animales registrados")}
+              {error
+                ? "No se pudieron cargar animales"
+                : query
+                  ? `No se encontraron animales para "${query}"`
+                  : (filtersApplied ? `No hay un animal ${filterLabel}` : "No hay animales registrados")}
             </h3>
             <p className={getThemeClasses(
               "text-gray-500 text-center max-w-md mb-4",
@@ -268,11 +289,11 @@ export const PetsList = (): JSX.Element => {
             )}>
               {error
                 ? "Intenta recargar la página o verifica tu conexión."
-                : (query 
+                : query
                   ? "Intenta con otros términos de búsqueda o revisa la ortografía."
-                  : "Aún no se han registrado animales en el sistema. ¡Agrega el primero!")}
+                  : (filtersApplied ? "Prueba ajustando los filtros." : "Aún no se han registrado animales en el sistema. ¡Agrega el primero!")}
             </p>
-            {!query && (
+            {!query && !filtersApplied && (Array.isArray(pets) && pets.length === 0) && (
               <button
                 onClick={() => setShowRescuerPicker(true)}
                 className={getThemeClasses(

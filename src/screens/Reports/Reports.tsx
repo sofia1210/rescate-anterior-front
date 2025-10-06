@@ -53,7 +53,7 @@ export const Reports = (): JSX.Element => {
 
   const metrics = useMemo(() => {
     const totalAnimales = animals.length;
-    const saludOkSet = new Set(["muy bueno", "bueno", "sano", "excelente", "estable"]);
+    const saludOkSet = new Set(["muy bueno", "bueno", "excelente", "estable"]);
     const normaliza = (s: string | null | undefined) => (s || "").toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
     const getTipo = (a: any) => normaliza(a?.tipo ?? a?.tipoAnimal ?? a?.type ?? "");
     const animalesSaludOk = animals.filter((a: any) => saludOkSet.has(normaliza(a.estadoSalud))).length;
@@ -184,7 +184,7 @@ export const Reports = (): JSX.Element => {
               {/* KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                 <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                  <div className="text-xs text-gray-600 mb-1">Animales</div>
+                  <div className="text-xs text-gray-600 mb-1">Animales en Total</div>
                   <div className="text-2xl font-bold text-gray-900">{metrics.totalAnimales}</div>
                 </div>
                 <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
@@ -192,11 +192,11 @@ export const Reports = (): JSX.Element => {
                   <div className="text-2xl font-bold text-gray-900">{metrics.animalesConEvaluaciones}</div>
                 </div>
                 <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                  <div className="text-xs text-gray-600 mb-1">Salud OK</div>
+                  <div className="text-xs text-gray-600 mb-1">Buena salud</div>
                   <div className="text-2xl font-bold text-gray-900">{metrics.animalesSaludOk}</div>
                 </div>
                 <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                  <div className="text-xs text-gray-600 mb-1">Salud NO OK</div>
+                  <div className="text-xs text-gray-600 mb-1">Mala salud</div>
                   <div className="text-2xl font-bold text-gray-900">{metrics.animalesSaludNoOk}</div>
                 </div>
                 <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
@@ -222,19 +222,26 @@ export const Reports = (): JSX.Element => {
                 <section className="lg:col-span-6">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Rescates últimos 6 meses</h3>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-end gap-2 h-24">
+                    <div
+                      className="grid items-end gap-2 h-24"
+                      style={{ gridTemplateColumns: `repeat(${Math.max(1, metrics.byMonthLabels.length)}, minmax(0, 1fr))` }}
+                    >
                       {metrics.byMonthLabels.map((lab, i) => {
                         const val = metrics.byMonthCounts[i] || 0;
                         const height = metrics.byMonthMax ? Math.max(4, Math.round((val / metrics.byMonthMax) * 90)) : 4;
                         return (
                           <div key={i} className="flex flex-col items-center justify-end text-xs text-gray-600">
-                            <div className="w-7 bg-green-500/80 rounded-t" style={{ height }} aria-label={`${lab}: ${val}`}></div>
+                            <div
+                              className="bg-green-500/80 rounded-t"
+                              style={{ height, width: '40%' }}
+                              aria-label={`${lab}: ${val}`}
+                            ></div>
                             <span className="mt-1">{lab}</span>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="mt-2 text-xs text-gray-600">Total: {metrics.byMonthCounts.reduce((a, b) => a + b, 0)}</div>
+                    <div className="mt-4 text-xs text-gray-600">Total: {metrics.byMonthCounts.reduce((a, b) => a + b, 0)} animales rescatados</div>
                   </div>
                 </section>
 
@@ -275,15 +282,15 @@ export const Reports = (): JSX.Element => {
                       const nokPct = Math.max(0, 100 - okPct);
                       return (
                         <>
-                          <div className="bg-emerald-500" style={{ width: `${okPct}%` }} title={`OK ${okPct}%`}></div>
-                          <div className="bg-red-500" style={{ width: `${nokPct}%` }} title={`No OK ${nokPct}%`}></div>
+                          <div className="bg-emerald-500" style={{ width: `${okPct}%` }} title={`Buena salud ${okPct}%`}></div>
+                          <div className="bg-red-500" style={{ width: `${nokPct}%` }} title={`Mala salud ${nokPct}%`}></div>
                         </>
                       );
                     })()}
                   </div>
                   <div className="mt-2 flex justify-between text-xs text-gray-600">
-                    <span>OK: {metrics.animalesSaludOk}</span>
-                    <span>No OK: {metrics.animalesSaludNoOk}</span>
+                    <span>Buena salud: {metrics.animalesSaludOk}</span>
+                    <span>Mala salud: {metrics.animalesSaludNoOk}</span>
                   </div>
                 </div>
               </section>

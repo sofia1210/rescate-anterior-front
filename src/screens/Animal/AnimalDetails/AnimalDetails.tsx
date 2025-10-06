@@ -45,7 +45,9 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
   const [adoptions, setAdoptions] = useState<any[]>([]);
   const [rescuePoint, setRescuePoint] = useState<{ lat: number; lng: number; desc?: string } | null>(null);
   const [showRescuerModal, setShowRescuerModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'Información General' | 'Ubicaciones' | 'Acciones'>('Información General');
+  const [activeTab, setActiveTab] = useState<'Información General' | 'Ubicación' | 'Acciones'>('Información General');
+  const addressCardRef = useRef<any>(null);
+  const [mapHeight, setMapHeight] = useState<number>(280);
 
   const resolveImageSrc = (filename?: string | null) => {
     const fallback = "/imagenes/patita.png";
@@ -157,17 +159,55 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
     return () => { alive = false; };
   }, [animal.id]);
 
-  // Función para inicializar el mapa con ubicaciones
+  // Dirección de rescate formateada
+  const rescueAddress = useMemo(() => {
+    const raw = String(rescuePoint?.desc || animal.rescuer?.rescueLocation || '').trim();
+    return raw;
+  }, [rescuePoint?.desc, animal.rescuer?.rescueLocation]);
+
+  const addressParts = useMemo(() => {
+    return rescueAddress
+      ? rescueAddress.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+  }, [rescueAddress]);
+
+  // Mostrar/ocultar mapa según la pestaña activa
+  useEffect(() => {
+    setShowMap(activeTab === 'Ubicación');
+  }, [activeTab]);
+
+  // Sincroniza la altura del mapa con el alto del card de dirección
+  useEffect(() => {
+    const el = addressCardRef.current as HTMLElement | null;
+    if (!el) return;
+    const compute = () => {
+      try {
+        const h = Math.max(200, Math.round(el.getBoundingClientRect().height));
+        setMapHeight(h);
+      } catch {}
+    };
+    compute();
+    let ro: any;
+    try {
+      ro = new (window as any).ResizeObserver(() => compute());
+      ro?.observe(el);
+    } catch {}
+    return () => { try { ro?.disconnect(); } catch {} };
+  }, [activeTab]);
+
+  // Asegura que el mapa recalcula tamaño cuando cambia la altura o se muestra
+  useEffect(() => {
+    try { mapRef.current?.invalidateSize(false); } catch {}
+  }, [mapHeight, showMap]);
+
+  // Inicializar/recargar el mapa solo con la ubicación de rescate
   useEffect(() => {
     if (!showMap) return;
-    
     const L: any = (window as any).L;
     const container = document.getElementById('animal-location-map');
     if (!L || !container) return;
 
-    // Coordenadas por defecto (Santa Cruz, Bolivia)
     const defaultCenter: [number, number] = [-17.7833, -63.1821];
-    
     if (!mapRef.current) {
       mapRef.current = L.map('animal-location-map').setView(defaultCenter, 10);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -182,64 +222,19 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
       }
     });
 
-    // Agregar marcadores para ubicaciones conocidas
-    const locations: Array<{lat: number, lng: number, title: string, color: string}> = [];
-    
-    // Ubicación de rescate real
+    // Añadir solo el punto de rescate
     if (rescuePoint) {
-      locations.push({
-        lat: rescuePoint.lat,
-        lng: rescuePoint.lng,
-        title: `Rescate: ${rescuePoint.desc || ''}`,
-        color: '#ef4444'
-      });
-    }
-
-    // Liberaciones reales
-    (liberations || []).forEach((x: any) => {
-      const lat = Number(x?.latitud); 
-      const lng = Number(x?.longitud);
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        locations.push({ 
-          lat, 
-          lng, 
-          title: `Liberación: ${x?.descripcion || ''}`, 
-          color: '#22c55e' 
-        });
-      }
-    });
-
-    // Adopciones reales
-    (adoptions || []).forEach((x: any) => {
-      const lat = Number(x?.latitud); 
-      const lng = Number(x?.longitud);
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        locations.push({ 
-          lat, 
-          lng, 
-          title: `Adopción: ${x?.descripcion || ''}`, 
-          color: '#3b82f6' 
-        });
-      }
-    });
-
-    // Agregar marcadores al mapa
-    locations.forEach(location => {
-      const marker = L.circleMarker([location.lat, location.lng], {
+      const marker = L.circleMarker([rescuePoint.lat, rescuePoint.lng], {
         radius: 8,
-        color: location.color,
-        fillColor: location.color,
+        color: '#ef4444',
+        fillColor: '#ef4444',
         fillOpacity: 0.8,
-        weight: 2
+        weight: 2,
       }).addTo(mapRef.current);
-      
-      marker.bindPopup(`<div class="text-sm"><strong>${location.title}</strong></div>`);
-    });
-
-    // Ajustar vista si hay ubicaciones
-    if (locations.length > 0) {
-      const group = new L.featureGroup(locations.map(loc => L.circleMarker([loc.lat, loc.lng])));
-      mapRef.current.fitBounds(group.getBounds().pad(0.1));
+      marker.bindPopup(`<div class=\"text-sm\"><strong>Rescate: ${rescuePoint.desc || ''}</strong></div>`);
+      try {
+        mapRef.current.setView([rescuePoint.lat, rescuePoint.lng], 15);
+      } catch {}
     }
 
     return () => {
@@ -248,10 +243,10 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
         mapRef.current = null;
       }
     };
-  }, [showMap, animal.rescuer?.rescueLocation, animal.releaseLocation, animal.tipo, liberations, adoptions, rescuePoint]);
+  }, [showMap, rescuePoint]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-[2rem] shadow-xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className={getThemeClasses(
@@ -304,7 +299,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
           {/* Tabs navigation */}
           <div className="border-b border-gray-200">
             <nav className="flex px-8" aria-label="Tabs">
-              {['Información General', 'Ubicaciones', 'Acciones'].map((tab) => (
+              {['Información General', 'Ubicación', 'Acciones'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
@@ -324,16 +319,12 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
           <div className="overflow-y-auto max-h-[65vh] px-8 py-6">
 
             {activeTab === 'Información General' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Columna izquierda con información */}
-                <div className="space-y-6">
-                  {/* Información Básica */}
-                  <div className={getThemeClasses(
-                    "bg-gray-50 p-4 rounded-lg",
-                    "bg-green-50/50 p-4 rounded-lg border border-green-100"
-                  )}>
+              <div className="space-y-8">
+                {/* Fila 1: Información Básica + Imagen */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Información Básica
@@ -358,14 +349,20 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                       <div className="text-gray-800">{formatDateDMY(animal.admissionDate)}</div>
                     </div>
                   </div>
+                  <div className="w-full h-80 rounded-lg overflow-hidden flex items-center justify-center shadow-lg bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-200">
+                    <img 
+                      src={resolveImageSrc(animal.image)} 
+                      alt={animal.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                </div>
 
-                  {/* Información de Alimentación */}
-                  <div className={getThemeClasses(
-                    "bg-gray-50 p-4 rounded-lg",
-                    "bg-green-50/50 p-4 rounded-lg border border-green-100"
-                  )}>
+                {/* Fila 2: Alimentación + Estado Actual */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
                       </svg>
                       Alimentación
@@ -381,90 +378,30 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                       <div className="text-gray-800">{animal.recommendedFrequency}</div>
                     </div>
                   </div>
-
-                  {/* Información del Rescatista */}
-                  {animal.rescuer && (
-                    <div className={getThemeClasses(
-                      "bg-gray-50 p-4 rounded-lg",
-                      "bg-green-50/50 p-4 rounded-lg border border-green-100"
-                    )}>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Rescatista
-                      </h3>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                        <div className="text-right font-semibold text-gray-600">Nombre:</div>
-                        <div className="text-gray-800">{animal.rescuer.name}</div>
-
-                        <div className="text-right font-semibold text-gray-600">Teléfono:</div>
-                        <div className="text-gray-800">{animal.rescuer.phone}</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Columna derecha con imagen y estado */}
-                <div className="space-y-6">
-                  {/* Imagen del Animal */}
-                  <div className={getThemeClasses(
-                    "w-full h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center shadow-lg",
-                    "w-full h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center shadow-lg shadow-green-200/50 border border-green-100"
-                  )}>
-                    <img 
-                      src={resolveImageSrc(animal.image)} 
-                      alt={animal.name} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-
-                  {/* Estado del Animal */}
-                  <div className={getThemeClasses(
-                    "bg-gray-50 p-4 rounded-lg w-full",
-                    "bg-green-50/50 p-4 rounded-lg border border-green-100 w-full"
-                  )}>
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200 w-full">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Estado Actual
                     </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-600">Tipo:</span>
-                        <span 
-                          className="px-3 py-1 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: animal.tipo === 'domestico' ? '#dbeafe' : '#d1fae5', 
-                            color: animal.tipo === 'domestico' ? '#1e40af' : '#065f46'
-                          }}
-                        >
-                          {animal.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-600">Estado:</span>
-                        <span className="text-sm text-gray-800">{animal.healthStatus}</span>
-                      </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                      <div className="text-right font-semibold text-gray-600">Tipo:</div>
+                      <div className="text-gray-800">{animal.tipo === 'domestico' ? 'Doméstico' : 'Silvestre'}</div>
 
-                      {animal.tipo === 'domestico' && (latestAdoptionDateStr || animal.releaseDate) && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-600">Fecha de Adopción:</span>
-                          <span className="text-sm text-gray-800">
-                            {latestAdoptionDateStr || formatDateDMY(animal.releaseDate)}
-                          </span>
-                        </div>
-                      )}
+                      <div className="text-right font-semibold text-gray-600">Estado:</div>
+                      <div className="text-gray-800">{animal.healthStatus}</div>
 
-                      {animal.tipo === 'silvestre' && (latestLiberationDateStr || animal.releaseDate) && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-600">Fecha de Liberación:</span>
-                          <span className="text-sm text-gray-800">
-                            {latestLiberationDateStr || formatDateDMY(animal.releaseDate)}
-                          </span>
-                        </div>
+                      {animal.tipo === 'domestico' ? (
+                        <>
+                          <div className="text-right font-semibold text-gray-600">Fecha de Adopción:</div>
+                          <div className="text-gray-800">{latestAdoptionDateStr || (animal.releaseDate ? formatDateDMY(animal.releaseDate) : 'Pendiente')}</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-right font-semibold text-gray-600">Fecha de Liberación:</div>
+                          <div className="text-gray-800">{latestLiberationDateStr || (animal.releaseDate ? formatDateDMY(animal.releaseDate) : 'Pendiente')}</div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -472,10 +409,10 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
               </div>
             )}
 
-            {activeTab === 'Ubicaciones' && (
+            {activeTab === 'Ubicación' && (
               <div className="space-y-6">
-                {/* Sección de Ubicaciones */}
-                <div className="mt-8">
+                {/* Sección de Ubicación */}
+                <div className="mt-1">
                   <div className={getThemeClasses(
                     "bg-gray-50 p-6 rounded-lg",
                     "bg-green-50/50 p-6 rounded-lg border border-green-100"
@@ -486,122 +423,55 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        Ubicación Importante
+                        Ubicación de Rescate
                       </h3>
-                      <button
-                        onClick={() => setShowMap(!showMap)}
-                        className={getThemeClasses(
-                          "px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center gap-2",
-                          "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+                      <div />
+                    </div>
+
+                    {/* Dirección + Mapa en dos columnas */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                      <div ref={addressCardRef} className={getThemeClasses(
+                        "p-4 border rounded-lg bg-white",
+                        "p-4 border border-green-200 rounded-lg bg-white shadow-sm"
+                      ) + " self-start"}>
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className="font-semibold text-gray-800">Dirección de Rescate</span>
+                        </div>
+                        {rescueAddress ? (
+                          <div className="text-sm text-gray-700 space-y-1">
+                            {addressParts.length > 0 ? (
+                              <ul className="list-disc list-inside space-y-1">
+                                {addressParts.slice(0, 6).map((part, idx) => (
+                                  <li key={idx} className="leading-relaxed">{part}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="leading-relaxed">{rescueAddress}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Sin dirección registrada.</p>
                         )}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                        </svg>
-                        {showMap ? 'Ocultar Mapa' : 'Ver Mapa'}
-                      </button>
-                    </div>
-
-                    {/* Información de ubicaciones */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      {animal.rescuer?.rescueLocation && (
-                        <div className={getThemeClasses(
-                          "p-4 border rounded-lg bg-white",
-                          "p-4 border border-green-200 rounded-lg bg-white shadow-sm"
-                        )}>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            </div>
-                            <span className="font-semibold text-gray-800">Ubicación de Rescate</span>
-                          </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">{animal.rescuer.rescueLocation}</p>
-                          <div className="mt-2 text-xs text-gray-500">
-                            Rescatado por: {animal.rescuer.name}
-                          </div>
-                        </div>
-                      )}
-
-                      {liberations && liberations.length > 0 && (
-                        <div className={getThemeClasses(
-                          "p-4 border rounded-lg bg-white",
-                          "p-4 border border-green-200 rounded-lg bg-white shadow-sm"
-                        )}>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            </div>
-                            <span className="font-semibold text-gray-800">Ubicación de Liberación</span>
-                          </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
-                            {liberations[0]?.descripcion || 'Liberación registrada'}
-                          </p>
-                          {liberations[0]?.fechaLiberacion && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              Liberado el: {formatDateDMY(liberations[0]?.fechaLiberacion)}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {adoptions && adoptions.length > 0 && (
-                        <div className={getThemeClasses(
-                          "p-4 border rounded-lg bg-white",
-                          "p-4 border border-green-200 rounded-lg bg-white shadow-sm"
-                        )}>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            </div>
-                            <span className="font-semibold text-gray-800">Ubicación de Adopción</span>
-                          </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
-                            {adoptions[0]?.descripcion || 'Adopción registrada'}
-                          </p>
-                          {adoptions[0]?.fechaAdopcion && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              Adoptado el: {formatDateDMY(adoptions[0]?.fechaAdopcion)}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Mapa */}
-                    {showMap && (
-                      <div className="mt-6">
-                        <div 
-                          id="animal-location-map" 
-                          className={getThemeClasses(
-                            "w-full h-80 rounded-lg border border-gray-200 relative z-0",
-                            "w-full h-80 rounded-lg border border-green-200 relative z-0"
-                          )}
-                          style={{ minHeight: '320px' }}
-                        ></div>
-                        <div className="mt-3 text-sm text-gray-500">
-                          <div className="flex items-center justify-center gap-6 flex-wrap">
-                            {animal.rescuer?.rescueLocation && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                <span>Ubicación de Rescate</span>
-                              </div>
-                            )}
-                            {liberations && liberations.length > 0 && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span>Ubicación de Liberación</span>
-                              </div>
-                            )}
-                            {adoptions && adoptions.length > 0 && (
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                <span>Ubicación de Adopción</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        {animal.rescuer?.name && (
+                          <div className="mt-3 text-xs text-gray-500">Rescatado por: {animal.rescuer.name}</div>
+                        )}
                       </div>
-                    )}
+
+                      <div className="self-start w-full">
+                        {showMap && (
+                          <div>
+                            <div 
+                              id="animal-location-map" 
+                              className={getThemeClasses(
+                                "w-full rounded-lg border border-gray-200 relative z-0",
+                                "w-full rounded-lg border border-green-200 relative z-0"
+                              )}
+                              style={{ height: mapHeight + 'px' }}
+                            ></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

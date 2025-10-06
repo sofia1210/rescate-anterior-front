@@ -37,19 +37,26 @@ const loadJsPDF = () => new Promise<any>((resolve, reject) => {
 
 const drawHeader = (doc: any, title: string, subtitle: string) => {
   const pageWidth = doc.internal.pageSize.getWidth();
-  // Subtle top rule
-  doc.setDrawColor(203, 213, 225); // slate-300
-  doc.line(14, 16, pageWidth - 14, 16);
+  // Brand banner (green) with white text and blue accent rule
+  const bannerH = 24;
+  doc.setFillColor(22, 163, 74); // emerald-600
+  doc.rect(0, 0, pageWidth, bannerH, 'F');
+
   // Title
-  doc.setTextColor(17, 24, 39); // gray-900
+  doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text(title, 14, 14);
+  doc.setFontSize(16);
+  doc.text(title, 14, 15);
+
   // Subtitle
-  doc.setTextColor(100, 116, 139); // slate-500
+  doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(subtitle, 14, 22);
+  doc.text(subtitle, 14, 21);
+
+  // Blue accent line at the bottom of banner
+  doc.setDrawColor(59, 130, 246); // blue-500
+  doc.line(0, bannerH, pageWidth, bannerH);
 };
 
 const drawSectionTitle = (doc: any, text: string, y: number) => {
@@ -133,7 +140,13 @@ export const generateGlobalReportPdf = async (snapshot: Snapshot) => {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Header
-  drawHeader(doc, 'Reporte global', `Generado: ${snapshot.fechaGeneracion} • Periodo: ${snapshot.periodo}`);
+  drawHeader(doc, 'RedSilvestre', 'Tu red de rescate de animales');
+
+  // Meta info under header
+  doc.setTextColor(30, 64, 175); // blue-800
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(`Generado: ${snapshot.fechaGeneracion} • Periodo: ${snapshot.periodo}`, 14, 30);
 
   let y = 36;
   drawSectionTitle(doc, 'Resumen General', y);
@@ -144,16 +157,17 @@ export const generateGlobalReportPdf = async (snapshot: Snapshot) => {
   const cardW = (pageWidth - 28 - 8) / cols; // margins 14/14, gap 8
   const cardH = 26;
   const gap = 8;
-  const neutralAccent: [number, number, number] = [203, 213, 225]; // slate-300
+  const brandGreen: [number, number, number] = [16, 185, 129]; // emerald-500
+  const brandBlue: [number, number, number] = [59, 130, 246]; // blue-500
   const cards: Array<{ t: string; v: string; c: [number, number, number] }> = [
-    { t: 'Total de animales', v: String(snapshot.totalAnimalesRegistrados), c: neutralAccent },
-    { t: 'Con evaluaciones', v: String(snapshot.animalesEnTratamiento), c: neutralAccent },
-    { t: 'Salud OK', v: String(snapshot.animalesSaludOk), c: neutralAccent },
-    { t: 'Salud NO OK', v: String(snapshot.animalesSaludNoOk), c: neutralAccent },
-    { t: 'Domésticos', v: String(snapshot.tipoDomestico), c: neutralAccent },
-    { t: 'Silvestres', v: String(snapshot.tipoSilvestre), c: neutralAccent },
-    { t: 'Rescatistas', v: String(snapshot.rescuerCount), c: neutralAccent },
-    { t: 'Veterinarios', v: String(snapshot.veterinarianCount), c: neutralAccent },
+    { t: 'Total de animales', v: String(snapshot.totalAnimalesRegistrados), c: brandGreen },
+    { t: 'Con evaluaciones', v: String(snapshot.animalesEnTratamiento), c: brandBlue },
+    { t: 'Buena salud', v: String(snapshot.animalesSaludOk), c: brandGreen },
+    { t: 'Mala salud', v: String(snapshot.animalesSaludNoOk), c: brandBlue },
+    { t: 'Domésticos', v: String(snapshot.tipoDomestico), c: brandGreen },
+    { t: 'Silvestres', v: String(snapshot.tipoSilvestre), c: brandBlue },
+    { t: 'Rescatistas', v: String(snapshot.rescuerCount), c: brandGreen },
+    { t: 'Veterinarios', v: String(snapshot.veterinarianCount), c: brandBlue },
   ];
 
   let cx = 14;
@@ -169,8 +183,10 @@ export const generateGlobalReportPdf = async (snapshot: Snapshot) => {
   y += 6;
   drawSectionTitle(doc, 'Serie de rescates (últimos 6 meses)', y);
   y += 4;
-  // Neutral bars
-  drawBarChart(doc, 14, y, pageWidth - 28, 48, snapshot.seriesMensual.labels, snapshot.seriesMensual.valores, [148, 163, 184]); // slate-400
+  // Centered half-width chart in brand blue
+  const chartWidth = Math.max(60, Math.round((pageWidth - 28) / 2));
+  const chartX = (pageWidth - chartWidth) / 2;
+  drawBarChart(doc, chartX, y, chartWidth, 48, snapshot.seriesMensual.labels, snapshot.seriesMensual.valores, [59, 130, 246]);
   y += 56;
 
   // Footer note

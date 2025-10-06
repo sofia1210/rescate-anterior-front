@@ -28,8 +28,8 @@ export const buildTableHtml = (snapshot: Snapshot): string => {
   const kpiRows = [
     ["Total de animales", snapshot.totalAnimalesRegistrados],
     ["Con evaluaciones", snapshot.animalesEnTratamiento],
-    ["Salud OK", snapshot.animalesSaludOk],
-    ["Salud NO OK", snapshot.animalesSaludNoOk],
+    ["Buena salud", snapshot.animalesSaludOk],
+    ["Mala salud", snapshot.animalesSaludNoOk],
     ["Domésticos", snapshot.tipoDomestico],
     ["Silvestres", snapshot.tipoSilvestre],
     ["Rescatistas", snapshot.rescuerCount],

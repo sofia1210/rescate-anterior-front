@@ -44,7 +44,7 @@ export const Adopciones = (): JSX.Element => {
 
   const normalize = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const elegibles = useMemo(() => {
-    const ok = new Set(["bueno","muy bueno","sano","muy_bueno","muy-bueno","estable"]);
+    const ok = new Set(["bueno","muy bueno","muy_bueno","muy-bueno","estable"]);
     return (pets || [])
       .filter((p: any) => ok.has(normalize(p?.healthStatus)))
       .filter((p: any) => {
@@ -250,7 +250,7 @@ export const Adopciones = (): JSX.Element => {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-800">Estado:</span>
-            {["todos","muy bueno","bueno","estable","sano"].map(key => (
+            {["todos","muy bueno","bueno","estable"].map(key => (
               <button
                 key={key}
                 onClick={() => setHealthChoice(key)}
