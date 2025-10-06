@@ -68,7 +68,7 @@ export const MedicalTreatmentView = (): JSX.Element => {
             onClick={() => navigate(`/veterinario/${id}`)}
             className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded"
           >
-            Añadir Tratamiento
+            Agregar Tratamiento
           </button>
         </div>
 

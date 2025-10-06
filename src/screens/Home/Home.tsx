@@ -7,7 +7,7 @@ export const Home = (): JSX.Element => {
 
   const cards = [
     { 
-      title: "Registrar Animal", 
+      title: "Agregar Animal", 
       desc: "Añade un nuevo ingreso rápidamente", 
       to: "/pets", 
       cta: "Ir a Animales",

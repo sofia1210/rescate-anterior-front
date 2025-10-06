@@ -168,10 +168,13 @@ export const PetsList = (): JSX.Element => {
           <div className="flex-1 md:flex-none" />
           <div>
             <Button
-              className="bg-green-600 text-white hover:bg-green-700"
+              className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
               onClick={() => setShowRescuerPicker(true)}
             >
-              Registrar Animal
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Agregar Animal
             </Button>
           </div>
         </div>
@@ -202,7 +205,7 @@ export const PetsList = (): JSX.Element => {
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button 
                   variant="outline" 
-                  className="w-full bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="w-full bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
                   onClick={() => setSelectedAnimal(pet)}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,11 +215,7 @@ export const PetsList = (): JSX.Element => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className={`w-full transition-colors duration-200 flex items-center justify-center gap-2 ${
-                    pet.veterinarian 
-                      ? "bg-blue-500 text-white hover:bg-blue-600" 
-                      : "bg-green-500 text-white hover:bg-green-600"
-                  }`}
+                  className="w-full transition-colors duration-200 flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
                   onClick={() => navigate(`/veterinario/${pet.id}`)}
                 >
                   {pet.veterinarian ? (
@@ -284,7 +283,7 @@ export const PetsList = (): JSX.Element => {
                 <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Registrar Primer Animal
+                Agregar Animal
               </button>
             )}
           </div>
@@ -344,6 +343,10 @@ export const PetsList = (): JSX.Element => {
         <EditRescuer
           onClose={() => setShowAddRescuer(false)}
           onSuccess={handleAddRescuerSuccess}
+          onBack={() => {
+            setShowAddRescuer(false);
+            setShowRescuerPicker(true);
+          }}
         />
       )}
 
@@ -369,17 +372,20 @@ export const PetsList = (): JSX.Element => {
               <div>
                 <Button
                   variant="outline"
-                  className="bg-green-600 text-white hover:bg-green-700"
+                  className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
                   onClick={() => {
                     setShowRescuerPicker(false);
                     setShowAddRescuer(true);
                   }}
                 >
-                  Añadir rescatista
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Agregar rescatista
                 </Button>
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {rescuers
                 .filter((r: any) => {
                   const q = (rescuerSearch || "").toLowerCase();
@@ -395,7 +401,7 @@ export const PetsList = (): JSX.Element => {
                       <div className="text-sm text-gray-600">{r.telefono}</div>
                     </div>
                     <Button
-                      className="bg-green-600 text-white hover:bg-green-700"
+                      className="bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
                       onClick={() => {
                         setCurrentRescuerId((r.id || r._id) as any);
                         setSelectedRescuer(r);
@@ -403,7 +409,7 @@ export const PetsList = (): JSX.Element => {
                         setShowAddAnimal(true);
                       }}
                     >
-                      Elegir
+                      Seleccionar
                     </Button>
                   </div>
                 ))}

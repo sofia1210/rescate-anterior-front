@@ -221,7 +221,7 @@ export const TransferHistory = (): JSX.Element => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Registrar Traslado
+              Agregar Traslado
             </Button>
           </div>
         <div className={getThemeClasses(
@@ -289,7 +289,7 @@ export const TransferHistory = (): JSX.Element => {
                   <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  Registrar Primer Traslado
+                  Agregar Traslado
                 </Button>
               </div>
             )

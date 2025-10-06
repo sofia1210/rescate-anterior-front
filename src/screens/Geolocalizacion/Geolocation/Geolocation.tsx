@@ -171,7 +171,7 @@ export const Geolocation = (): JSX.Element => {
           </div>
           <div className="flex justify-end mt-3">
             <Button className="bg-green-500 text-white hover:bg-green-600" onClick={handleSave} disabled={!newPos}>
-              Registrar geolocalización
+              Agregar geolocalización
             </Button>
           </div>
         </div>

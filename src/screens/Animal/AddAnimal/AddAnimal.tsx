@@ -309,12 +309,12 @@ export const AddAnimal = ({
       onSuccess?.();
     } catch (error) {
       console.error("❌ Error al registrar el animal:", error);
-      alert("Hubo un problema al registrar el animal. Revisá la consola.");
+      alert("Hubo un problema al registrar el animal.");
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[95vh] flex flex-col overflow-hidden">
         {/* Header mejorado con gradiente y mejor jerarquía */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200 px-8 py-6">
@@ -331,7 +331,7 @@ export const AddAnimal = ({
               </button>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">
-                  {isEditing ? "Editar Animal" : "Registrar Nuevo Animal"}
+                  {isEditing ? "Editar Animal" : "Agregar Animal"}
                 </h2>
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <span className="flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-green-200">
@@ -356,10 +356,8 @@ export const AddAnimal = ({
             className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-8 py-6"
             noValidate
           >
-            {/* Columna Izquierda */}
-            <div className="space-y-6">
-              {/* Sección Información Básica - ALTURA FIJA */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 shadow-sm h-[520px] flex flex-col">
+            {/* Card 1: Información Básica (fila 1, col 1) */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 shadow-sm min-h-[520px] flex flex-col">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-blue-100 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -371,7 +369,7 @@ export const AddAnimal = ({
                 
                 <div className="space-y-4 flex-1">
                   <FormFieldWithError
-                    label="Nombre *"
+                    label="Nombre "
                     value={formData.nombre}
                     onChange={(v) => setFormData({ ...formData, nombre: v })}
                     pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
@@ -403,7 +401,7 @@ export const AddAnimal = ({
                   />
                   
                   <FormFieldWithError
-                    label="Raza"
+                    label="Raza *"
                     value={formData.raza}
                     onChange={(v) => setFormData({ ...formData, raza: v })}
                     pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]{2,60}$"
@@ -424,65 +422,8 @@ export const AddAnimal = ({
                   />
                 </div>
               </div>
-
-              {/* Sección Salud y Cuidados - ALTURA FIJA */}
-              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-200 shadow-sm h-[520px] flex flex-col">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-orange-100 rounded-xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Salud y Cuidados</h3>
-                </div>
-                
-                <div className="space-y-4 flex-1">
-                  <DropdownField
-                    label="Estado de Salud *"
-                    value={formData.estadoSalud}
-                    onChange={(v) => setFormData({ ...formData, estadoSalud: v })}
-                    options={["muy bueno", "bueno", "estable", "malo", "muy malo"]}
-                    required
-                    forceValidate={submitted}
-                  />
-                  
-                  <DropdownField
-                    label="Tipo de Alimentación *"
-                    value={formData.tipoAlimentacion}
-                    onChange={(v) => setFormData({ ...formData, tipoAlimentacion: v })}
-                    options={["Carnívoro", "Herbívoro", "Insectívoro", "Omnívoro"]}
-                    required
-                    forceValidate={submitted}
-                  />
-                  
-                  <DropdownField
-                    label="Cantidad Recomendada *"
-                    value={formData.cantidadRecomendada}
-                    onChange={(v) => setFormData({ ...formData, cantidadRecomendada: v })}
-                    options={["100 g", "250 g", "500 g", "1 kg", "2 kg"]}
-                    required
-                    forceValidate={submitted}
-                  />
-                  
-                  <DropdownField
-                    label="Frecuencia Recomendada *"
-                    value={formData.frecuenciaRecomendada}
-                    onChange={(v) => setFormData({ ...formData, frecuenciaRecomendada: v })}
-                    options={["Diaria", "Semanal", "Mensual"]}
-                    required
-                    forceValidate={submitted}
-                  />
-                  
-                  {/* Espaciador para igualar altura */}
-                  <div className="flex-1"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Columna Derecha */}
-            <div className="space-y-6">
-              {/* Sección Información del Rescate - ALTURA FIJA */}
-              <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-6 border border-purple-200 shadow-sm h-[520px] flex flex-col">
+            {/* Card 2: Información del Rescate (fila 1, col 2) */}
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-6 border border-purple-200 shadow-sm min-h-[520px] flex flex-col">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-purple-100 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -495,7 +436,7 @@ export const AddAnimal = ({
                 
                 <div className="space-y-4 flex-1">
                   <FormFieldWithError
-                    label="Fecha de Rescate *"
+                    label="Fecha de Rescate "
                     value={formData.fechaRescate}
                     onChange={(v) => setFormData({ ...formData, fechaRescate: v })}
                     type="date"
@@ -505,7 +446,7 @@ export const AddAnimal = ({
                   />
                   
                   <FormFieldWithError
-                    label="Ubicación del Rescate *"
+                    label="Ubicación del Rescate "
                     value={formData.ubicacionRescate}
                     onChange={(v) => setFormData({ ...formData, ubicacionRescate: v })}
                     minLength={3}
@@ -535,7 +476,7 @@ export const AddAnimal = ({
                         </button>
                         <Button
                           type="button"
-                          className="bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 px-4 py-2 text-sm shadow-md hover:shadow-lg transition-all duration-200"
+                          className="bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
                           onClick={requestCurrentLocation}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -565,9 +506,60 @@ export const AddAnimal = ({
                   </div>
                 </div>
               </div>
+            {/* Card 3: Salud y Cuidados (fila 2, col 1) */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-200 shadow-sm min-h-[520px] flex flex-col">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-orange-100 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Salud y Cuidados</h3>
+              </div>
+              
+              <div className="space-y-4 flex-1">
+                <DropdownField
+                  label="Estado de Salud *"
+                  value={formData.estadoSalud}
+                  onChange={(v) => setFormData({ ...formData, estadoSalud: v })}
+                  options={["muy bueno", "bueno", "estable", "malo", "muy malo"]}
+                  required
+                  forceValidate={submitted}
+                />
+                
+                <DropdownField
+                  label="Tipo de Alimentación *"
+                  value={formData.tipoAlimentacion}
+                  onChange={(v) => setFormData({ ...formData, tipoAlimentacion: v })}
+                  options={["Carnívoro", "Herbívoro", "Insectívoro", "Omnívoro"]}
+                  required
+                  forceValidate={submitted}
+                />
+                
+                <DropdownField
+                  label="Cantidad Recomendada *"
+                  value={formData.cantidadRecomendada}
+                  onChange={(v) => setFormData({ ...formData, cantidadRecomendada: v })}
+                  options={["100 g", "250 g", "500 g", "1 kg", "2 kg"]}
+                  required
+                  forceValidate={submitted}
+                />
+                
+                <DropdownField
+                  label="Frecuencia Recomendada *"
+                  value={formData.frecuenciaRecomendada}
+                  onChange={(v) => setFormData({ ...formData, frecuenciaRecomendada: v })}
+                  options={["Diaria", "Semanal", "Mensual"]}
+                  required
+                  forceValidate={submitted}
+                />
+                
+                <div className="flex-1"></div>
+              </div>
+            </div>
 
-              {/* Sección Multimedia - ALTURA FIJA */}
-              <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-200 shadow-sm h-[520px] flex flex-col">
+            {/* Card 4: Multimedia (fila 2, col 2) */}
+            <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-200 shadow-sm min-h-[520px] flex flex-col">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-pink-100 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -631,7 +623,7 @@ export const AddAnimal = ({
                               <p className="text-sm text-gray-600 font-medium">
                                 <span className="text-green-600">Click para subir</span> o arrastra una imagen
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">PNG, JPG (máx. 5MB)</p>
+                              <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG</p>
                             </div>
                           </div>
                         )}
@@ -641,18 +633,17 @@ export const AddAnimal = ({
                 </div>
               </div>
 
-              {/* Botón de envío - FUERA del grid de altura fija */}
-              <div className="flex justify-center pt-2">
-                <Button
-                  type="submit"
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 px-12 py-4 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-                >
+            {/* Botón de envío */}
+            <div className="lg:col-span-2 flex justify-center pt-2">
+              <Button
+                type="submit"
+                className="bg-green-600 text-white hover:bg-green-700 px-12 py-4 text-lg shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
+              >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  {isEditing ? "Guardar Cambios" : "Registrar Animal"}
-                </Button>
-              </div>
+                  {isEditing ? "Guardar Cambios" : "Agregar Animal"}
+              </Button>
             </div>
           </form>
         </div>
@@ -668,7 +659,7 @@ export const AddAnimal = ({
 
       <MapHelpModal open={showMapHelp} onClose={() => setShowMapHelp(false)} />
 
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }

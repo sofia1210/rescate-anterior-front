@@ -54,9 +54,9 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
 
   useEffect(() => {
     if (!shouldValidate) return;
-    
+
     let message = "";
-    
+
     if (required && !value.trim()) {
       message = `${label} es obligatorio`;
     } else if (minLength && value.length < minLength) {
@@ -69,9 +69,19 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
         message = validateMessage || "Formato inválido";
       }
     }
-    
+
+    // Validación adicional para fechas con min/max
+    if (!message && type === "date" && value) {
+      const val = value;
+      if (min && val < min) {
+        message = validateMessage || `Fecha mínima permitida: ${min}`;
+      } else if (max && val > max) {
+        message = validateMessage || `Fecha máxima permitida: ${max}`;
+      }
+    }
+
     setErrorMessage(message);
-  }, [value, shouldValidate, required, minLength, maxLength, pattern, validateMessage, label]);
+  }, [value, shouldValidate, required, minLength, maxLength, pattern, validateMessage, label, type, min, max]);
 
   useEffect(() => {
     if (forceValidate) setShouldValidate(true);
