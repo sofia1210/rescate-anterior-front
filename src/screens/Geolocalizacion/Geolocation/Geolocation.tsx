@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Navbar } from "../../../components/Navbar";
-import { createGeolocalizacion } from "../../../services/transferService";
+import { createGeolocalizacion, getAllLiberations } from "../../../services/transferService";
+import { getAnimalById, getAllAdopciones, getAllAdoptions } from "../../../services/dataService";
 import { useThemeClasses } from "../../../hooks/useThemeClasses";
 // Leaflet via global L from CDN
 
@@ -20,6 +21,8 @@ export const Geolocation = (): JSX.Element => {
   const markerRef = useRef<any>(null);
   const centerOnceRef = useRef<boolean>(false);
   const [showHelp, setShowHelp] = useState<boolean>(false);
+  const [isAdoptedOrLiberated, setIsAdoptedOrLiberated] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<{ type: string; label: string }>({ type: 'active', label: 'En cuidado' });
 
   async function reverseGeocode(lat: number, lng: number): Promise<string> {
     try {
@@ -104,6 +107,53 @@ export const Geolocation = (): JSX.Element => {
     );
   }, []);
 
+  // Verificar estado del animal (adoptado/liberado)
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const animal = await getAnimalById(String(id));
+        const nombre = String(animal?.nombre || animal?.name || '').trim();
+        if (!nombre) return;
+
+        let hasAdoption = false;
+        let hasLiberation = false;
+
+        // Verificar adopciones aprobadas
+        try {
+          let ad: any;
+          try { ad = await getAllAdoptions(); } catch { ad = await getAllAdopciones(); }
+          const adata = ad?.data; const al = Array.isArray(adata) ? adata : (adata?.postgres ?? []);
+          const approvedAdoptions = al.filter((x: any) => 
+            String(x?.nombreAnimal || '').trim() === nombre && 
+            String(x?.estado || '').toLowerCase() === 'aprobada'
+          );
+          hasAdoption = approvedAdoptions.length > 0;
+        } catch {}
+
+        // Verificar liberaciones
+        try {
+          const li = await getAllLiberations();
+          const ld = li?.data; const ll = Array.isArray(ld) ? ld : (ld?.postgres ?? []);
+          const animalLiberations = ll.filter((x: any) => String(x?.nombreAnimal || '').trim() === nombre);
+          hasLiberation = animalLiberations.length > 0;
+        } catch {}
+
+        const isAdoptedOrLiberatedValue = hasAdoption || hasLiberation;
+        let currentStatusValue = { type: 'active', label: 'En cuidado' };
+        
+        if (hasAdoption) {
+          currentStatusValue = { type: 'adopted', label: 'Adoptado' };
+        } else if (hasLiberation) {
+          currentStatusValue = { type: 'liberated', label: 'Liberado' };
+        }
+
+        setIsAdoptedOrLiberated(isAdoptedOrLiberatedValue);
+        setCurrentStatus(currentStatusValue);
+      } catch {}
+    })();
+  }, [id]);
+
   const handleSave = async () => {
     if (!newPos || !id) return;
     await createGeolocalizacion({
@@ -130,6 +180,24 @@ export const Geolocation = (): JSX.Element => {
       <div className="container mx-auto p-4">
         <div className="mb-6">
           <h2 className="text-xl font-semibold">Ubicación del Animal</h2>
+          {isAdoptedOrLiberated && (
+            <div className={`mt-3 p-4 rounded-lg border ${
+              currentStatus.type === 'adopted' 
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : 'bg-blue-50 border-blue-200 text-blue-800'
+            }`}>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">Animal {currentStatus.label}</span>
+              </div>
+              <p className="text-sm mt-1">
+                Este animal ya fue {currentStatus.type === 'adopted' ? 'adoptado' : 'liberado'}, por lo que no se pueden agregar nuevas ubicaciones. 
+                Puedes ver el historial de traslados en la sección correspondiente.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className={getThemeClasses(
@@ -170,8 +238,19 @@ export const Geolocation = (): JSX.Element => {
             />
           </div>
           <div className="flex justify-end mt-3">
-            <Button className="bg-green-500 text-white hover:bg-green-600" onClick={handleSave} disabled={!newPos}>
-              Agregar geolocalización
+            <Button 
+              className={isAdoptedOrLiberated 
+                ? "bg-gray-400 text-gray-200 flex items-center gap-2 cursor-not-allowed"
+                : "bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
+              } 
+              onClick={handleSave} 
+              disabled={!newPos || isAdoptedOrLiberated}
+              title={isAdoptedOrLiberated ? `No disponible - Animal ${currentStatus.label.toLowerCase()}` : "Agregar nueva ubicación"}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              {isAdoptedOrLiberated ? `${currentStatus.label} - No disponible` : "Agregar Ubicación"}
             </Button>
           </div>
         </div>

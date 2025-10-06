@@ -138,6 +138,24 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
     return ordered[ordered.length - 1].toLocaleString();
   }, [adoptions]);
 
+  // Determinar si el animal está adoptado o liberado
+  const isAdoptedOrLiberated = useMemo(() => {
+    const hasAdoption = Boolean(latestAdoptionDateStr && latestAdoptionDateStr.trim() !== "");
+    const hasLiberation = Boolean(latestLiberationDateStr && latestLiberationDateStr.trim() !== "");
+    return hasAdoption || hasLiberation;
+  }, [latestAdoptionDateStr, latestLiberationDateStr]);
+
+  // Estado actual del animal
+  const currentStatus = useMemo(() => {
+    if (latestAdoptionDateStr && latestAdoptionDateStr.trim() !== "") {
+      return { type: 'adopted', date: latestAdoptionDateStr, label: 'Adoptado' };
+    }
+    if (latestLiberationDateStr && latestLiberationDateStr.trim() !== "") {
+      return { type: 'liberated', date: latestLiberationDateStr, label: 'Liberado' };
+    }
+    return { type: 'active', date: '', label: 'En cuidado' };
+  }, [latestAdoptionDateStr, latestLiberationDateStr]);
+
   // Carga coordenadas reales de rescate del animal
   useEffect(() => {
     let alive = true;
@@ -276,6 +294,17 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   </span>
                   <span className="text-gray-500">•</span>
                   <span className="text-gray-600">{animal.species}</span>
+                  <span className="text-gray-500">•</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    currentStatus.type === 'adopted' 
+                      ? 'bg-green-100 text-green-800' 
+                      : currentStatus.type === 'liberated'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {currentStatus.label}
+                    
+                  </span>
                 </div>
               </div>
             </div>
@@ -338,9 +367,6 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
 
                       <div className="text-right font-semibold text-gray-600">Sexo:</div>
                       <div className="text-gray-800">{animal.sex}</div>
-
-                      <div className="text-right font-semibold text-gray-600">Edad:</div>
-                      <div className="text-gray-800">{animal.age}</div>
 
                       <div className="text-right font-semibold text-gray-600">Estado de Salud:</div>
                       <div className="text-gray-800">{animal.healthStatus}</div>
@@ -483,10 +509,16 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   {/* Primera fila de acciones */}
                   <Button 
                     className={getThemeClasses(
-                      "bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24",
-                      "bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24"
+                      isAdoptedOrLiberated 
+                        ? "bg-gray-400 text-gray-200 font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24 cursor-not-allowed"
+                        : "bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24",
+                      isAdoptedOrLiberated 
+                        ? "bg-gray-400 text-gray-200 font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24"
                     )}
-                    onClick={() => navigate(`/medical-evaluation/${animal.id}`)}
+                    onClick={() => !isAdoptedOrLiberated && navigate(`/medical-evaluation/${animal.id}`)}
+                    disabled={isAdoptedOrLiberated}
+                    title={isAdoptedOrLiberated ? `No disponible - Animal ${currentStatus.label.toLowerCase()}` : "Ver evaluaciones médicas"}
                   >
                     <div className="p-2 bg-white/10 rounded-lg">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -495,25 +527,31 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                     </div>
                     <div className="flex flex-col items-start">
                       <span className="text-lg">Evaluaciones Médicas</span>
-                      <span className="text-xs text-white/80">Ver historial médico</span>
+                      <span className="text-xs text-white/80">
+                        {isAdoptedOrLiberated ? `${currentStatus.label} - No disponible` : "Ver historial médico"}
+                      </span>
                     </div>
                   </Button>
 
                   <Button 
-                    className={getThemeClasses(
-                      "bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24",
-                      "bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24"
-                    )}
-                    onClick={() => navigate(`/geolocation/${animal.id}`)}
+                    className={isAdoptedOrLiberated 
+                      ? "bg-gray-400 text-gray-200 font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
+                    }
+                    onClick={() => !isAdoptedOrLiberated && navigate(`/geolocation/${animal.id}`)}
+                    disabled={isAdoptedOrLiberated}
+                    title={isAdoptedOrLiberated ? `No disponible - Animal ${currentStatus.label.toLowerCase()}` : "Agregar nueva ubicación"}
                   >
                     <div className="p-2 bg-white/10 rounded-lg">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </div>
                     <div className="flex flex-col items-start">
                       <span className="text-lg">Ubicación</span>
-                      <span className="text-xs text-white/80">Gestionar ubicaciones</span>
+                      <span className="text-xs text-white/80">
+                        {isAdoptedOrLiberated ? `${currentStatus.label} - No disponible` : "Gestionar ubicaciones"}
+                      </span>
                     </div>
                   </Button>
 
@@ -523,6 +561,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                       "bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24"
                     )}
                     onClick={() => navigate(`/transfer-history/${animal.id}`)}
+                    title="Ver historial de traslados"
                   >
                     <div className="p-2 bg-white/10 rounded-lg">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -537,11 +576,17 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
 
                   {/* Segunda fila de acciones */}
                   <Button 
-                    onClick={() => navigate(`/medical-treatment/${animal.id}`)}
+                    onClick={() => !isAdoptedOrLiberated && navigate(`/medical-treatment/${animal.id}`)}
                     className={getThemeClasses(
-                      "bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24",
-                      "bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24"
+                      isAdoptedOrLiberated 
+                        ? "bg-gray-400 text-gray-200 font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24 cursor-not-allowed"
+                        : "bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24",
+                      isAdoptedOrLiberated 
+                        ? "bg-gray-400 text-gray-200 font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24 cursor-not-allowed"
+                        : "bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-xl w-full flex items-center gap-3 p-4 h-24"
                     )}
+                    disabled={isAdoptedOrLiberated}
+                    title={isAdoptedOrLiberated ? `No disponible - Animal ${currentStatus.label.toLowerCase()}` : "Gestionar tratamientos médicos"}
                   >
                     <div className="p-2 bg-white/10 rounded-lg">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -550,7 +595,9 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                     </div>
                     <div className="flex flex-col items-start">
                       <span className="text-lg">Tratamiento</span>
-                      <span className="text-xs text-white/80">{hasTreatment ? 'Ver tratamiento actual' : 'Nuevo tratamiento'}</span>
+                      <span className="text-xs text-white/80">
+                        {isAdoptedOrLiberated ? `${currentStatus.label} - No disponible` : (hasTreatment ? 'Ver tratamiento actual' : 'Nuevo tratamiento')}
+                      </span>
                     </div>
                   </Button>
 

@@ -121,7 +121,7 @@ export const PetsList = (): JSX.Element => {
         <div className="relative">
           <Input
             type="search"
-            placeholder="Buscar por nombre, especie o ID"
+            placeholder="Buscar por nombre"
             className="w-full pl-4 pr-12 py-3 rounded-lg bg-white border-2 border-gray-200 focus:border-green-500 transition-colors duration-200 text-lg"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -227,7 +227,7 @@ export const PetsList = (): JSX.Element => {
                 <Button 
                   variant="outline" 
                   className="w-full transition-colors duration-200 flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
-                  onClick={() => navigate(`/veterinario/${pet.id}`)}
+                  onClick={() => navigate(`/veterinario/${pet.id}?mode=treatment`)}
                 >
                   {pet.veterinarian ? (
                     <>

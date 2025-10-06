@@ -104,7 +104,7 @@ export const AddMedicalTreatment = (): JSX.Element => {
               </label>
               <input 
                 name="nombre" 
-                placeholder="Ej: Tratamiento para infección respiratoria"
+                placeholder="ej. Tratamiento para infección respiratoria"
                 value={form.nombre} 
                 onChange={handleChange} 
                 className={getThemeClasses(
@@ -122,7 +122,7 @@ export const AddMedicalTreatment = (): JSX.Element => {
               </label>
               <input 
                 name="medicamento" 
-                placeholder="Ej: Amoxicilina, Ibuprofeno"
+                placeholder="ej. Amoxicilina, Ibuprofeno"
                 value={form.medicamento} 
                 onChange={handleChange} 
                 className={getThemeClasses(
@@ -140,7 +140,7 @@ export const AddMedicalTreatment = (): JSX.Element => {
               </label>
               <input 
                 name="dosis" 
-                placeholder="Ej: 10mg cada 8 horas"
+                placeholder="ej. 10mg cada 8 horas"
                 value={form.dosis} 
                 onChange={handleChange} 
                 className={getThemeClasses(
@@ -158,7 +158,7 @@ export const AddMedicalTreatment = (): JSX.Element => {
               </label>
               <input 
                 name="duracion" 
-                placeholder="Ej: 7 días, 2 semanas"
+                placeholder="ej. 7 días, 2 semanas"
                 value={form.duracion} 
                 onChange={handleChange} 
                 className={getThemeClasses(

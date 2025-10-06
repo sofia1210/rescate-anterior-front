@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "../../../components/Navbar";
+import { Button } from "../../../components/ui/button";
 import { getAnimalById } from "../../../services/dataService";
 import { getEvaluationByAnimal } from "../../../services/medicalService";
 import { useThemeClasses } from "../../../hooks/useThemeClasses";
+import { formatDateWithOffset } from "../../../lib/utils";
 
 export const MedicalEvaluation = (): JSX.Element => {
   const { id } = useParams(); // id del animal
@@ -59,17 +61,22 @@ export const MedicalEvaluation = (): JSX.Element => {
 
       {/* CONTENIDO */}
       <div className="p-6">
-        <h1 className="text-2xl font-semibold text-green-800 mb-6">
-          Evaluaciones Médicas - {animalName || `Animal ${id}`}
-        </h1>
-
-        <div className="mb-4 flex justify-end">
-          <button
-            onClick={() => navigate(`/veterinario/${id}`)}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded"
-          >
-            Agregar Evaluación Médica
-          </button>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold text-green-800">
+            Evaluaciones Médicas - {animalName || `Animal ${id}`}
+          </h1>
+          
+          {!loading && !error && evaluations.length > 0 && (
+            <Button
+              className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
+              onClick={() => navigate(`/veterinario/${id}?mode=evaluation`)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Agregar Evaluación Médica
+            </Button>
+          )}
         </div>
 
         {loading && (
@@ -97,9 +104,9 @@ export const MedicalEvaluation = (): JSX.Element => {
                     <div className="font-semibold mb-1">Medicación</div>
                     <div className="mb-2">{ev.medicacion}</div>
                   </>)}
-                  <div className="text-sm text-gray-600">Fecha: {new Date(ev.fechaEvaluacion).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Fecha: {formatDateWithOffset(ev.fechaEvaluacion, -240)}</div>
                   {ev.proximaRevision && (
-                    <div className="text-sm text-gray-600">Próxima: {new Date(ev.proximaRevision).toLocaleString()}</div>
+                    <div className="text-sm text-gray-600">Próxima: {formatDateWithOffset(ev.proximaRevision, -240)}</div>
                   )}
                   {ev.responsableNombre && (
                     <div className="text-sm mt-2">Responsable: {ev.responsableNombre}</div>
@@ -123,15 +130,15 @@ export const MedicalEvaluation = (): JSX.Element => {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">No hay evaluaciones registradas</h3>
                 <p className="text-gray-500 mb-4">Este animal aún no tiene evaluaciones médicas registradas.</p>
-                <button
-                  onClick={() => navigate(`/veterinario/${id}`)}
-                  className={getThemeClasses(
-                    "px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200",
-                    "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                  )}
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
+                  onClick={() => navigate(`/veterinario/${id}?mode=evaluation`)}
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
                   Agregar Primera Evaluación
-                </button>
+                </Button>
               </div>
             </div>
           )

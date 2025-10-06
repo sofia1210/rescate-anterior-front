@@ -15,6 +15,7 @@ export interface EvaluationData {
 export interface TreatmentData {
   nombreAnimal: string;
   tratamiento: string;
+  sintomas: string;
   duracion: string;
   observaciones?: string;
   responsableNombre: string;
@@ -49,6 +50,7 @@ export const createTreatment = (data: TreatmentData) => {
   const payload = {
     nombreAnimal: data.nombreAnimal,
     tratamiento: data.tratamiento,
+    sintomas: data.sintomas,
     duracion: data.duracion,
     observaciones: data.observaciones || undefined,
     responsableNombre: data.responsableNombre,

@@ -57,26 +57,29 @@ export const FormFieldWithError: React.FC<FormFieldWithErrorProps> = ({
 
     let message = "";
 
-    if (required && !value.trim()) {
-      message = `${label} es obligatorio`;
-    } else if (minLength && value.length < minLength) {
-      message = `Mínimo ${minLength} caracteres`;
-    } else if (maxLength && value.length > maxLength) {
-      message = `Máximo ${maxLength} caracteres`;
-    } else if (pattern) {
-      const regex = new RegExp(pattern);
-      if (!regex.test(value)) {
-        message = validateMessage || "Formato inválido";
+    // Solo validar si hay contenido o si es requerido y está vacío
+    if (value.trim() || required) {
+      if (required && !value.trim()) {
+        message = `${label} es obligatorio`;
+      } else if (minLength && value.length < minLength) {
+        message = `Mínimo ${minLength} caracteres`;
+      } else if (maxLength && value.length > maxLength) {
+        message = `Máximo ${maxLength} caracteres`;
+      } else if (pattern && value.trim()) {
+        const regex = new RegExp(pattern);
+        if (!regex.test(value)) {
+          message = validateMessage || "Formato inválido";
+        }
       }
-    }
 
-    // Validación adicional para fechas con min/max
-    if (!message && type === "date" && value) {
-      const val = value;
-      if (min && val < min) {
-        message = validateMessage || `Fecha mínima permitida: ${min}`;
-      } else if (max && val > max) {
-        message = validateMessage || `Fecha máxima permitida: ${max}`;
+      // Validación adicional para fechas con min/max
+      if (!message && type === "date" && value) {
+        const val = value;
+        if (min && val < min) {
+          message = validateMessage || `Fecha mínima permitida: ${min}`;
+        } else if (max && val > max) {
+          message = validateMessage || `Fecha máxima permitida: ${max}`;
+        }
       }
     }
 

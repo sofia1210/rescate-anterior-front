@@ -17,6 +17,8 @@ export const TransferHistory = (): JSX.Element => {
   const layersRef = useRef<any>(null);
   const [rescuePoint, setRescuePoint] = useState<{ lat: number; lng: number; desc: string } | null>(null);
   const [events, setEvents] = useState<Array<{ lat: number; lng: number; fecha?: string; desc: string }>>([]);
+  const [isAdoptedOrLiberated, setIsAdoptedOrLiberated] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<{ type: string; label: string }>({ type: 'active', label: 'En cuidado' });
 
   useEffect(() => {
     let alive = true;
@@ -75,10 +77,119 @@ export const TransferHistory = (): JSX.Element => {
           }
         } catch {}
 
+        // Determinar estado del animal (adoptado/liberado) - Búsqueda directa por ID
+        let hasAdoption = false;
+        let hasLiberation = false;
+        let animalName = '';
+
+        try {
+          const animal = await getAnimalById(currentId);
+          animalName = String(animal?.nombre || animal?.name || '').trim();
+          
+          console.log('🐾 Checking animal:', { id: currentId, name: animalName });
+
+          // Verificar adopciones aprobadas - buscar por ID del animal
+          try {
+            let ad: any;
+            try { 
+              ad = await getAllAdoptions(); 
+            } catch { 
+              ad = await getAllAdopciones(); 
+            }
+            const adata = ad?.data; 
+            const al = Array.isArray(adata) ? adata : (adata?.postgres ?? []);
+            
+            console.log('🔍 All adoptions:', al);
+            
+            // Buscar por ID del animal o por nombre como fallback
+            const approvedAdoptions = al.filter((x: any) => {
+              const animalIdMatch = String(x?.animalId || x?.animal_id || '').trim() === String(currentId).trim();
+              const nameMatch = String(x?.nombreAnimal || '').trim() === animalName;
+              const isApproved = String(x?.estado || '').toLowerCase() === 'aprobada';
+              
+              console.log('🔍 Checking adoption:', { 
+                animalIdMatch, 
+                nameMatch, 
+                isApproved, 
+                animalId: x?.animalId || x?.animal_id,
+                nombreAnimal: x?.nombreAnimal,
+                estado: x?.estado
+              });
+              
+              return (animalIdMatch || nameMatch) && isApproved;
+            });
+            
+            console.log('🎯 Approved adoptions for animal', currentId, ':', approvedAdoptions);
+            
+            if (approvedAdoptions.length > 0) {
+              hasAdoption = true;
+              console.log('✅ Animal is adopted!');
+            }
+          } catch (error) {
+            console.error('❌ Error checking adoptions:', error);
+          }
+
+          // Verificar liberaciones - buscar por ID del animal
+          try {
+            const li = await getAllLiberations();
+            const ld = li?.data; 
+            const ll = Array.isArray(ld) ? ld : (ld?.postgres ?? []);
+            
+            console.log('🔍 All liberations:', ll);
+            
+            // Buscar por ID del animal o por nombre como fallback
+            const animalLiberations = ll.filter((x: any) => {
+              const animalIdMatch = String(x?.animalId || x?.animal_id || '').trim() === String(currentId).trim();
+              const nameMatch = String(x?.nombreAnimal || '').trim() === animalName;
+              
+              console.log('🔍 Checking liberation:', { 
+                animalIdMatch, 
+                nameMatch, 
+                animalId: x?.animalId || x?.animal_id,
+                nombreAnimal: x?.nombreAnimal
+              });
+              
+              return animalIdMatch || nameMatch;
+            });
+            
+            console.log('🎯 Animal liberations for animal', currentId, ':', animalLiberations);
+            
+            if (animalLiberations.length > 0) {
+              hasLiberation = true;
+              console.log('✅ Animal is liberated!');
+            }
+          } catch (error) {
+            console.error('❌ Error checking liberations:', error);
+          }
+        } catch (error) {
+          console.error('❌ Error getting animal data:', error);
+        }
+
+        const isAdoptedOrLiberatedValue = hasAdoption || hasLiberation;
+        let currentStatusValue = { type: 'active', label: 'En cuidado' };
+        
+        if (hasAdoption) {
+          currentStatusValue = { type: 'adopted', label: 'Adoptado' };
+        } else if (hasLiberation) {
+          currentStatusValue = { type: 'liberated', label: 'Liberado' };
+        }
+
+        // Debug logs
+        console.log('🐾 TransferHistory Debug:', {
+          animalId: currentId,
+          animalName: animalName,
+          hasAdoption,
+          hasLiberation,
+          isAdoptedOrLiberatedValue,
+          currentStatusValue
+        });
+
         if (!alive) return;
         setGeos(filtered);
         setRescuePoint(rescue);
         setEvents(evs);
+        setIsAdoptedOrLiberated(isAdoptedOrLiberatedValue);
+        setCurrentStatus(currentStatusValue);
       } catch (e: any) {
         if (!alive) return;
         setError(e?.message ?? "Error al cargar historial");
@@ -206,24 +317,55 @@ export const TransferHistory = (): JSX.Element => {
       "min-h-screen bg-green-50"
     )}>
       <Navbar 
-        title="Historial de Traslados y Seguimiento" 
+        title="Seguimiento" 
         showBackButton={true} 
         onBackClick={() => navigate(-1)} 
       />
 
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-2">
+        {/* Título y estado del animal */}
+        <div className="mb-3">
+          
+          {isAdoptedOrLiberated && (
+            <div className={`mt-2 p-3 rounded-lg border ${
+              currentStatus.type === 'adopted' 
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : 'bg-blue-50 border-blue-200 text-blue-800'
+            }`}>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">Animal {currentStatus.label}</span>
+              </div>
+              <p className="text-sm mt-1">
+                Este animal ya fue {currentStatus.type === 'adopted' ? 'adoptado' : 'liberado'}, por lo que no se pueden agregar nuevas ubicaciones. 
+                Puedes ver el historial completo de traslados a continuación.
+              </p>
+            </div>
+          )}
+        </div>
         
-      <div className="flex justify-end pb-4">
+        {/* Solo mostrar título y botón superior si hay traslados */}
+        {geos.length > 0 && (
+          <div className="flex justify-between items-center pb-2">
+            <h2 className="text-xl font-semibold text-gray-600">Historial de Traslados</h2>
             <Button 
-              onClick={() => navigate(`/geolocation/${id}`)}
-              className="bg-green-500 text-white hover:bg-green-600 flex items-center gap-2"
+              onClick={() => !isAdoptedOrLiberated && navigate(`/geolocation/${id}`)}
+              className={isAdoptedOrLiberated 
+                ? "bg-gray-400 text-gray-200 flex items-center gap-2 cursor-not-allowed"
+                : "bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
+              }
+              disabled={isAdoptedOrLiberated}
+              title={isAdoptedOrLiberated ? `No disponible - Animal ${currentStatus.label.toLowerCase()}` : "Agregar nueva ubicación"}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              Agregar Traslado
+              {isAdoptedOrLiberated ? `${currentStatus.label} - No disponible` : "Agregar Ubicación"}
             </Button>
           </div>
+        )}
         <div className={getThemeClasses(
           "bg-white rounded-lg p-6 shadow-lg space-y-6",
           "bg-white rounded-lg p-6 shadow-lg shadow-green-200/50 border border-green-100 space-y-6"
@@ -245,9 +387,7 @@ export const TransferHistory = (): JSX.Element => {
                         <span className="font-semibold text-gray-800">{item.desc || (item.kind==='Traslado' ? 'Ubicación' : item.kind)}</span>
                       </div>
                       <div className="text-sm text-gray-600">{item.fecha ? new Date(item.fecha).toLocaleString() : '-'}</div>
-                      {item.lat !== undefined && item.lng !== undefined && (
-                        <div className="text-xs text-gray-500 mt-1">Lat: {item.lat} · Lng: {item.lng}</div>
-                      )}
+                      
                     </div>
                   ))}
                 </div>
@@ -281,15 +421,12 @@ export const TransferHistory = (): JSX.Element => {
                 </p>
                 <Button 
                   onClick={() => navigate(`/geolocation/${id}`)}
-                  className={getThemeClasses(
-                    "px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-medium",
-                    "px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium"
-                  )}
+                  className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow font-medium px-6 py-3 rounded-lg"
                 >
-                  <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  Agregar Traslado
+                  Agregar Ubicación
                 </Button>
               </div>
             )
