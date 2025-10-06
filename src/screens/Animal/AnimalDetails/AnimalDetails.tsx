@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getAnimalById } from "../../../services/dataService";
 import { getAllLiberations } from "../../../services/transferService";
 import { getAllAdopciones, getAllAdoptions } from "../../../services/dataService";
+import { EditAnimalStatus } from "../EditAnimalStatus/EditAnimalStatus";
 
 interface AnimalDetailsProps {
   animal: {
@@ -32,10 +33,9 @@ interface AnimalDetailsProps {
     };
   };
   onClose: () => void;
-  onEdit: () => void;
 }
 
-export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): JSX.Element => {
+export const AnimalDetails = ({ animal, onClose }: AnimalDetailsProps): JSX.Element => {
   const navigate = useNavigate();
   const { getThemeClasses } = useThemeClasses();
   const hasTreatment = false;
@@ -45,6 +45,7 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
   const [adoptions, setAdoptions] = useState<any[]>([]);
   const [rescuePoint, setRescuePoint] = useState<{ lat: number; lng: number; desc?: string } | null>(null);
   const [showRescuerModal, setShowRescuerModal] = useState(false);
+  const [showEditStatusModal, setShowEditStatusModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'Información General' | 'Ubicación' | 'Acciones'>('Información General');
   const addressCardRef = useRef<any>(null);
   const [mapHeight, setMapHeight] = useState<number>(280);
@@ -145,16 +146,44 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
     return hasAdoption || hasLiberation;
   }, [latestAdoptionDateStr, latestLiberationDateStr]);
 
-  // Estado actual del animal
+  // Estado actual del animal basado en salud
   const currentStatus = useMemo(() => {
-    if (latestAdoptionDateStr && latestAdoptionDateStr.trim() !== "") {
-      return { type: 'adopted', date: latestAdoptionDateStr, label: 'Adoptado' };
+    const healthStatus = animal.healthStatus || 'Estable';
+    
+    // Mapear estados de salud a los valores del sistema
+    switch (healthStatus) {
+      case 'Muy Bueno':
+        return { type: 'Muy Bueno', label: 'Muy Bueno' };
+      case 'Bueno':
+        return { type: 'Bueno', label: 'Bueno' };
+      case 'Estable':
+        return { type: 'Estable', label: 'Estable' };
+      case 'Malo':
+        return { type: 'Malo', label: 'Malo' };
+      case 'Muy Malo':
+        return { type: 'Muy Malo', label: 'Muy Malo' };
+      default:
+        return { type: 'Estable', label: 'Estable' };
     }
-    if (latestLiberationDateStr && latestLiberationDateStr.trim() !== "") {
-      return { type: 'liberated', date: latestLiberationDateStr, label: 'Liberado' };
+  }, [animal.healthStatus]);
+
+  // Función para obtener colores del estado de salud
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Muy Bueno':
+        return 'bg-green-100 text-green-800';
+      case 'Bueno':
+        return 'bg-blue-100 text-blue-800';
+      case 'Estable':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Malo':
+        return 'bg-orange-100 text-orange-800';
+      case 'Muy Malo':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
-    return { type: 'active', date: '', label: 'En cuidado' };
-  }, [latestAdoptionDateStr, latestLiberationDateStr]);
+  };
 
   // Carga coordenadas reales de rescate del animal
   useEffect(() => {
@@ -295,15 +324,8 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
                   <span className="text-gray-500">•</span>
                   <span className="text-gray-600">{animal.species}</span>
                   <span className="text-gray-500">•</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    currentStatus.type === 'adopted' 
-                      ? 'bg-green-100 text-green-800' 
-                      : currentStatus.type === 'liberated'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(currentStatus.type)}`}>
                     {currentStatus.label}
-                    
                   </span>
                 </div>
               </div>
@@ -311,13 +333,13 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
             
             <div className="flex gap-3">
               <Button
-                onClick={onEdit}
-                className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg flex items-center gap-2"
+                onClick={() => setShowEditStatusModal(true)}
+                className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Editar
+                Cambiar Estado de Salud
               </Button>
             </div>
           </div>
@@ -661,6 +683,20 @@ export const AnimalDetails = ({ animal, onClose, onEdit }: AnimalDetailsProps): 
           </div>
         )}
       </div>
+
+      {/* Modal de cambio de estado */}
+      {showEditStatusModal && (
+        <EditAnimalStatus
+          animal={animal}
+          currentStatus={currentStatus}
+          onClose={() => setShowEditStatusModal(false)}
+          onSuccess={() => {
+            setShowEditStatusModal(false);
+            // Recargar la página para mostrar el nuevo estado
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };

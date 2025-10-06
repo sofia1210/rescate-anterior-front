@@ -88,6 +88,9 @@ export const updateAnimal = (id: string, formData: FormData) =>
     headers: { "Content-Type": "multipart/form-data" },
   });
 
+export const updateAnimalStatus = (id: string, status: string) =>
+  api.put(`/animales/${id}`, { estadoSalud: status });
+
 export const deleteAnimal = (id: string) => api.delete(`/animales/${id}`);
 
 // Evaluaciones (para veterinarios/etiquetas auxiliares)

@@ -14,9 +14,7 @@ export const PetsList = (): JSX.Element => {
   const navigate = useNavigate();
   const { getThemeClasses } = useThemeClasses();
   const [selectedAnimal, setSelectedAnimal] = useState<any | null>(null);
-  const [editingAnimal, setEditingAnimal] = useState<any | null>(null);
   const [showAddAnimal, setShowAddAnimal] = useState(false);
-  const [showEditAnimal, setShowEditAnimal] = useState(false);
   const [showAddRescuer, setShowAddRescuer] = useState(false);
   const [showRescuerPicker, setShowRescuerPicker] = useState(false);
   const [rescuers, setRescuers] = useState<any[]>([]);
@@ -319,11 +317,6 @@ export const PetsList = (): JSX.Element => {
         <AnimalDetails 
           animal={selectedAnimal} 
           onClose={() => setSelectedAnimal(null)}
-          onEdit={() => {
-            setEditingAnimal(selectedAnimal);
-            setSelectedAnimal(null);
-            setShowEditAnimal(true);
-          }}
         />
       )}
 
@@ -346,20 +339,8 @@ export const PetsList = (): JSX.Element => {
         />
       )}
 
-      {showEditAnimal && (
-        <AddAnimal
-          isEditing
-          initialAnimal={editingAnimal}
-          rescuerId={editingAnimal?.rescuer?.id ? String(editingAnimal.rescuer.id) : undefined}
-          onClose={() => setShowEditAnimal(false)}
-          onSuccess={() => {
-            setShowEditAnimal(false);
-            setEditingAnimal(null);
-            navigate("/pets");
-            window.location.reload();
-          }}
-        />
-      )}
+      {/* El componente AddAnimal para edición ya no se usa, 
+          ahora solo se cambia el estado desde AnimalDetails */}
       {showAddRescuer && (
         <EditRescuer
           onClose={() => setShowAddRescuer(false)}
