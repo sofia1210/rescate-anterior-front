@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { StrictRouteGuard } from "./components/StrictRouteGuard";
 
 import { Register } from "./screens/Usuario/Registro/Registro";
 import { Login } from "./screens/Usuario/Login/Login";
@@ -30,23 +30,23 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/" element={<Login />} />
           <Route path="/registro" element={<Register />} />
           
-          {/* Rutas protegidas */}
-          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/pets" element={<ProtectedRoute><PetsList /></ProtectedRoute>} />
-          <Route path="/medical-evaluation/:id" element={<ProtectedRoute><MedicalEvaluation /></ProtectedRoute>} />
-          <Route path="/medical-evaluation/:id/edit" element={<ProtectedRoute><EditMedicalEvaluation /></ProtectedRoute>} />
-          <Route path="/geolocation/:id" element={<ProtectedRoute><Geolocation /></ProtectedRoute>} />
-          <Route path="/transfer-history/:id" element={<ProtectedRoute><TransferHistory /></ProtectedRoute>} />
-          <Route path="/transfer-history/:id/edit" element={<ProtectedRoute><EditTransferHistory /></ProtectedRoute>} />
-          <Route path="/medical-treatment/:id" element={<ProtectedRoute><MedicalTreatmentView /></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-          <Route path="/management" element={<ProtectedRoute><Management /></ProtectedRoute>} />
+          {/* Rutas protegidas con StrictRouteGuard */}
+          <Route path="/home" element={<StrictRouteGuard><Home /></StrictRouteGuard>} />
+          <Route path="/pets" element={<StrictRouteGuard><PetsList /></StrictRouteGuard>} />
+          <Route path="/medical-evaluation/:id" element={<StrictRouteGuard><MedicalEvaluation /></StrictRouteGuard>} />
+          <Route path="/medical-evaluation/:id/edit" element={<StrictRouteGuard><EditMedicalEvaluation /></StrictRouteGuard>} />
+          <Route path="/geolocation/:id" element={<StrictRouteGuard><Geolocation /></StrictRouteGuard>} />
+          <Route path="/transfer-history/:id" element={<StrictRouteGuard><TransferHistory /></StrictRouteGuard>} />
+          <Route path="/transfer-history/:id/edit" element={<StrictRouteGuard><EditTransferHistory /></StrictRouteGuard>} />
+          <Route path="/medical-treatment/:id" element={<StrictRouteGuard><MedicalTreatmentView /></StrictRouteGuard>} />
+          <Route path="/reports" element={<StrictRouteGuard><Reports /></StrictRouteGuard>} />
+          <Route path="/management" element={<StrictRouteGuard><Management /></StrictRouteGuard>} />
           <Route path="/login" element={<Navigate to="/home" replace />} />
-          <Route path="/veterinarios" element={<ProtectedRoute><VeterinarianList /></ProtectedRoute>} />
-          <Route path="/veterinario/:id" element={<ProtectedRoute><Veterinario /></ProtectedRoute>} />
-          <Route path="/adopciones" element={<ProtectedRoute><Adopciones /></ProtectedRoute>} />
-          <Route path="/liberaciones" element={<ProtectedRoute><Liberaciones /></ProtectedRoute>} />
-          <Route path="/rescuerdetails/:id" element={<ProtectedRoute><RescuerDetails /></ProtectedRoute>} />
+          <Route path="/veterinarios" element={<StrictRouteGuard><VeterinarianList /></StrictRouteGuard>} />
+          <Route path="/veterinario/:id" element={<StrictRouteGuard><Veterinario /></StrictRouteGuard>} />
+          <Route path="/adopciones" element={<StrictRouteGuard><Adopciones /></StrictRouteGuard>} />
+          <Route path="/liberaciones" element={<StrictRouteGuard><Liberaciones /></StrictRouteGuard>} />
+          <Route path="/rescuerdetails/:id" element={<StrictRouteGuard><RescuerDetails /></StrictRouteGuard>} />
         </Routes>
       </Router>
     </ThemeProvider>

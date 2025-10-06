@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { useThemeClasses } from "../hooks/useThemeClasses";
 import { useAuthProtection } from "../hooks/useAuthProtection";
+import { LogoutModal } from "./LogoutModal";
 
 interface NavbarProps {
   title: string;
@@ -13,6 +14,7 @@ interface NavbarProps {
 export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarProps) => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { getThemeClasses } = useThemeClasses();
   const { secureLogout } = useAuthProtection();
 
@@ -36,6 +38,10 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
   ];
 
   const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
     secureLogout();
   };
 
@@ -173,6 +179,13 @@ export const Navbar = ({ title, showBackButton = false, onBackClick }: NavbarPro
           </div>
         )}
       </div>
+      
+      {/* Modal de confirmación de logout */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </header>
   );
 };

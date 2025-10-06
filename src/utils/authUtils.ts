@@ -54,3 +54,82 @@ export const performSecureLogout = () => {
   // Redirigir al login
   window.location.href = '/';
 };
+
+// Función para validar acceso a una ruta específica
+export const validateRouteAccess = (path: string): boolean | string => {
+  const isLoggedIn = isAuthenticated();
+  const publicRoutes = ['/', '/registro'];
+  const isPublicRoute = publicRoutes.includes(path);
+  
+  console.log('🔍 Validando acceso a:', path, 'Autenticado:', isLoggedIn, 'Ruta pública:', isPublicRoute);
+  
+  // Si no está logueado y trata de acceder a ruta protegida
+  if (!isLoggedIn && !isPublicRoute) {
+    console.log('❌ Acceso denegado: Usuario no autenticado intentando acceder a:', path);
+    return false;
+  }
+  
+  // Si está logueado y trata de acceder a login/registro
+  if (isLoggedIn && isPublicRoute) {
+    console.log('🔄 Redirigiendo usuario autenticado desde:', path);
+    return 'redirect-to-app';
+  }
+  
+  return true;
+};
+
+// Función para interceptar cambios de URL
+export const interceptUrlChanges = (navigate: (path: string, options?: any) => void) => {
+  let lastUrl = window.location.href;
+  
+  const handleUrlChange = () => {
+    const currentUrl = window.location.href;
+    const currentPath = window.location.pathname;
+    
+    if (currentUrl !== lastUrl) {
+      console.log('🔄 Cambio de URL detectado:', lastUrl, '->', currentUrl);
+      lastUrl = currentUrl;
+      
+      const validation = validateRouteAccess(currentPath);
+      
+      if (validation === false) {
+        console.log('🚫 Bloqueando acceso no autorizado');
+        window.history.replaceState(null, '', '/');
+        navigate('/', { replace: true });
+      } else if (validation === 'redirect-to-app') {
+        console.log('🔄 Redirigiendo usuario autenticado');
+        window.history.replaceState(null, '', '/pets');
+        navigate('/pets', { replace: true });
+      }
+    }
+  };
+
+  // Interceptar usando MutationObserver
+  const urlObserver = new MutationObserver(handleUrlChange);
+  urlObserver.observe(document, { subtree: true, childList: true });
+
+  // Interceptar usando interval como fallback
+  const urlCheckInterval = setInterval(handleUrlChange, 100);
+
+  // Interceptar eventos de navegación
+  const handlePopState = () => {
+    console.log('🔄 Evento popstate detectado');
+    handleUrlChange();
+  };
+
+  const handleHashChange = () => {
+    console.log('🔄 Cambio de hash detectado');
+    handleUrlChange();
+  };
+
+  window.addEventListener('popstate', handlePopState);
+  window.addEventListener('hashchange', handleHashChange);
+
+  // Función de limpieza
+  return () => {
+    urlObserver.disconnect();
+    clearInterval(urlCheckInterval);
+    window.removeEventListener('popstate', handlePopState);
+    window.removeEventListener('hashchange', handleHashChange);
+  };
+};
