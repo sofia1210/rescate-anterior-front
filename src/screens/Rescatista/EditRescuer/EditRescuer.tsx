@@ -218,10 +218,10 @@ export const EditRescuer = ({
               onChange={(v) => setFormData({ ...formData, nombreRescatista: v.replace(/\s{2,}/g, " ") })}
               minLength={2}
               maxLength={80}
-              pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\\s.'-]{2,80}$"
+              pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]+(\s+[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$"
               placeholder="ej. Guillermo Soto"
               required
-              validateMessage="Solo letras y espacios. 2 a 80 caracteres."
+              validateMessage="Solo letras y espacios"
               forceValidate={submitted}
             />
 
