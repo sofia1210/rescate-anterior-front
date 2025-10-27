@@ -13,7 +13,7 @@ export const useUrlOnlyProtection = () => {
       const publicRoutes = ['/', '/registro'];
       const isPublicRoute = publicRoutes.includes(path);
       
-      console.log('🔍 Validando acceso a:', path, 'Autenticado:', isLoggedIn);
+      //console.log('🔍 Validando acceso a:', path, 'Autenticado:', isLoggedIn);
       
       // Si no está logueado y trata de acceder a ruta protegida
       if (!isLoggedIn && !isPublicRoute) {

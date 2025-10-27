@@ -21,7 +21,7 @@ export const StrictRouteGuard = ({ children }: StrictRouteGuardProps) => {
       const publicRoutes = ['/', '/registro'];
       const isPublicRoute = publicRoutes.includes(currentPath);
       
-      console.log('🔍 Validando acceso estricto a:', currentPath, 'Autenticado:', isLoggedIn);
+      //console.log('🔍 Validando acceso estricto a:', currentPath, 'Autenticado:', isLoggedIn);
       
       // Si no está logueado y trata de acceder a ruta protegida
       if (!isLoggedIn && !isPublicRoute) {

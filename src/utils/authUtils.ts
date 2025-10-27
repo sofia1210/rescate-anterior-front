@@ -61,7 +61,7 @@ export const validateRouteAccess = (path: string): boolean | string => {
   const publicRoutes = ['/', '/registro'];
   const isPublicRoute = publicRoutes.includes(path);
   
-  console.log('🔍 Validando acceso a:', path, 'Autenticado:', isLoggedIn, 'Ruta pública:', isPublicRoute);
+  //console.log('🔍 Validando acceso a:', path, 'Autenticado:', isLoggedIn, 'Ruta pública:', isPublicRoute);
   
   // Si no está logueado y trata de acceder a ruta protegida
   if (!isLoggedIn && !isPublicRoute) {
