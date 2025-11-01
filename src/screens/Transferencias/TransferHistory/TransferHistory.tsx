@@ -1,14 +1,15 @@
 import { Button } from "../../../components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Navbar } from "../../../components/Navbar";
 import { getAllGeolocalizaciones, getAllLiberations } from "../../../services/transferService";
 import { getAnimalById, getAllAdopciones, getAllAdoptions } from "../../../services/dataService";
 import { useThemeClasses } from "../../../hooks/useThemeClasses";
+import { useSafeNavigation } from "../../../hooks/useSafeNavigation";
 
 export const TransferHistory = (): JSX.Element => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { navigate: safeNavigate, goBack } = useSafeNavigation();
   const { getThemeClasses } = useThemeClasses();
   const [geos, setGeos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -415,7 +416,7 @@ export const TransferHistory = (): JSX.Element => {
       <Navbar 
         title="Seguimiento" 
         showBackButton={true} 
-        onBackClick={() => navigate(-1)} 
+        onBackClick={() => goBack()} 
       />
 
       <div className="container mx-auto p-2">
@@ -449,7 +450,7 @@ export const TransferHistory = (): JSX.Element => {
               <h2 className="text-xl font-semibold text-gray-600">Historial de Traslados</h2>
             </div>
             <Button 
-              onClick={() => !isAdoptedOrLiberated && navigate(`/geolocation/${id}`)}
+              onClick={() => !isAdoptedOrLiberated && safeNavigate(`/geolocation/${id}`)}
               className={isAdoptedOrLiberated 
                 ? "bg-gray-400 text-gray-200 flex items-center gap-2 cursor-not-allowed"
                 : "bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow"
@@ -518,7 +519,7 @@ export const TransferHistory = (): JSX.Element => {
                   ¡Registra la primera ubicación para comenzar el seguimiento!
                 </p>
                 <Button 
-                  onClick={() => navigate(`/geolocation/${id}`)}
+                  onClick={() => safeNavigate(`/geolocation/${id}`)}
                   className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 shadow-md hover:shadow-lg active:shadow-sm transition-shadow font-medium px-6 py-3 rounded-lg"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

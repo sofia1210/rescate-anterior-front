@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Navbar } from "../../../components/Navbar";
 import { createGeolocalizacion, getAllLiberations } from "../../../services/transferService";
 import { getAnimalById, getAllAdopciones, getAllAdoptions } from "../../../services/dataService";
 import { useThemeClasses } from "../../../hooks/useThemeClasses";
+import { useSafeNavigation } from "../../../hooks/useSafeNavigation";
 // Leaflet via global L from CDN
 
 declare global {
@@ -13,7 +14,7 @@ declare global {
 
 export const Geolocation = (): JSX.Element => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { navigate: safeNavigate, goBack } = useSafeNavigation();
   const { getThemeClasses } = useThemeClasses();
   const [newPos, setNewPos] = useState<{ lat: number; lng: number; descripcion?: string } | null>(null);
 
@@ -163,7 +164,7 @@ export const Geolocation = (): JSX.Element => {
       descripcion: newPos.descripcion || "Nueva ubicación",
       fechaRegistro: new Date().toISOString(),
     });
-    navigate(`/transfer-history/${id}`);
+    safeNavigate(`/transfer-history/${id}`);
   };
 
   return (
@@ -174,7 +175,7 @@ export const Geolocation = (): JSX.Element => {
       <Navbar 
         title="Geolocalización y Monitoreo" 
         showBackButton={true} 
-        onBackClick={() => navigate(-1)} 
+        onBackClick={() => goBack()} 
       />
 
       <div className="container mx-auto p-4">
